@@ -7,31 +7,67 @@ from pathlib import Path
 from checks.manifest import ManifestCheck
 from report import Report
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+# Logging setup
+logging.addLevelName(logging.INFO, "")
+logging.addLevelName(logging.ERROR, "::error::")
+logging.addLevelName(logging.WARNING, "::warning::")
+logging.basicConfig(
+    level=logging.INFO,
+    format=" %(levelname)s %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+
 
 def find_manifest_path(base_path: Path) -> Path:
+    """Find the manifest.json file in the custom_plugins directory.
+
+    Args:
+    ----
+        base_path: The base path of the repository.
+
+    Returns:
+    -------
+        The path to the manifest.json file.
+
+    """
+    logging.info("🔍 Searching for manifest.json...")
     plugin_dirs = list(base_path.glob("custom_plugins/*"))
+
     if len(plugin_dirs) == 0:
-        logging.error("Geen plugins gevonden in 'custom_plugins/'.")
+        logging.error("No plugin directories found in 'custom_plugins/'.")
         sys.exit(1)
+
     if len(plugin_dirs) > 1:
-        logging.error(f"Meerdere mappen gevonden in 'custom_plugins/': {[p.name for p in plugin_dirs]}")
+        logging.error(
+            f"Multiple plugin directories found: {[p.name for p in plugin_dirs]}"
+        )
         sys.exit(1)
+
     manifest_path = plugin_dirs[0] / "manifest.json"
     if not manifest_path.exists():
-        logging.error(f"manifest.json niet gevonden in {manifest_path}.")
+        logging.error(f"manifest.json not found in {manifest_path}.")
         sys.exit(1)
-    logging.info(f"Manifest gevonden: {manifest_path}")
+    logging.info(f"✅ Found manifest.json at {manifest_path}")
     return manifest_path
 
-def run_rhfest(base_path: str):
+
+def run_rhfest(base_path: str) -> None:
+    """Run validation for the manifest.json file.
+
+    Args:
+    ----
+        base_path: The base path of the repository.
+
+    """
     base_path = Path(base_path).resolve()
     manifest_path = find_manifest_path(base_path)
     report = Report()
-    logging.info("Start met het valideren van het manifest.json-bestand...")
+
+    logging.info("🚦 Starting manifest.json validation...")
     result = ManifestCheck(manifest_path).run()
     report.add(result)
     report.generate()
+
 
 if __name__ == "__main__":
     run_rhfest(".")

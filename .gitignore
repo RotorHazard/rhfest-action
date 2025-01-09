@@ -128,3 +128,4 @@ venv.bak/
 
 setup.py
 .python-version
+custom_plugins
