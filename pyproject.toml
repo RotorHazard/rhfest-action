@@ -1,7 +1,7 @@
 [project]
 name = "rhfest-action"
-description = "RotorHazard Plugin Manifest Validator"
-version = "1.0.0"
+description = "RotorHazard plugin validation action"
+version = "0.0.0"
 license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
@@ -36,9 +36,5 @@ lint.ignore = [
   "ISC001",
 
   # Custom ignores
-  #"T201",    # Allow print statements
-  "G004",
+  "G004",    # Allow f-string in logging
 ]
-
-[scripts]
-rhfest-core = "rhfest.core:run_rhfest"
