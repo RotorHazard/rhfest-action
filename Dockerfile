@@ -11,10 +11,10 @@ WORKDIR /app
 COPY . .
 
 # Installeer dependencies via UV
-RUN uv sync --no-group
+RUN uv sync --no-group dev
 
 # Stel werkdirectory voor GitHub Actions mount in
-ENV WORKSPACE /github/workspace
+ENV WORKSPACE=/github/workspace
 
 # Debug de mappenstructuur bij runtime
 ENTRYPOINT ["sh", "-c", "ls -la /github/workspace && uv run python /app/rhfest/core.py $WORKSPACE"]
