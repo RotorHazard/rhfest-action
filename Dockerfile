@@ -1,11 +1,20 @@
+# Basisimage met Python
 FROM python:3.13-slim
-LABEL Maintainer="Klaas Schoute"
 
+# Installeer UV (dependency manager)
 RUN pip install uv
 
+# Stel werkdirectory voor scripts in
+WORKDIR /app
+
+# Kopieer alle bestanden van `rhfest-actions` naar `/rhfest`
 COPY . .
 
-RUN uv sync --no-group dev
+# Installeer dependencies via UV
+RUN uv sync --no-group
 
-ENTRYPOINT ["uv", "run", "python"]
-CMD ["rhfest/core.py"]
+# Stel werkdirectory voor GitHub Actions mount in
+ENV WORKSPACE /github/workspace
+
+# Debug de mappenstructuur bij runtime
+ENTRYPOINT ["sh", "-c", "ls -la /github/workspace && uv run python /app/rhfest/core.py $WORKSPACE"]
