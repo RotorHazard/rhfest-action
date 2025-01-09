@@ -1,9 +1,10 @@
+"""Manifest check module."""
+
 import json
 import logging
 from pathlib import Path
 
 import voluptuous as vol
-from voluptuous.humanize import humanize_error
 
 PYPI_DEPENDENCY_REGEX = r"^[a-zA-Z0-9_.-]+==\d+\.\d+\.\d+$"
 
@@ -20,22 +21,40 @@ MANIFEST_SCHEMA = vol.Schema(
         vol.Optional("tags"): [str],
     },
     required=True,
-    extra=vol.REMOVE_EXTRA,
+    extra=vol.PREVENT_EXTRA,
 )
 
+
 class ManifestCheck:
-    def __init__(self, manifest_file: Path):
+    """Manifest check class."""
+
+    def __init__(self, manifest_file: Path) -> None:
+        """Set the manifest file path."""
         self.manifest_file = manifest_file
 
-    def run(self):
-        """Valideert de manifest.json volgens het schema."""
-        with open(self.manifest_file, "r", encoding="utf-8") as f:
+    def run(self) -> dict[str, str]:
+        """Validate the manifest.json according to the schema.
+
+        Returns
+        -------
+            dict: The validation status and message.
+
+        """
+        with Path.open(self.manifest_file, encoding="utf-8") as f:
             manifest_data = json.load(f)
 
         try:
             MANIFEST_SCHEMA(manifest_data)
-            logging.info("✅ Validatie geslaagd: manifest.json is geldig.")
-            return {"status": "pass", "message": "Manifest is valid"}
+            logging.info("✅ Manifest validation passed.")
+        except vol.MultipleInvalid as e:
+            for error in e.errors:
+                logging.error(  # noqa: TRY400
+                    f"Validation error in [{'.'.join(str(p) for p in error.path) or 'root'}]: {error.msg}"  # noqa: E501
+                )
+            return {"status": "fail", "message": "Validation failed"}
         except vol.Invalid as e:
-            logging.error(f"❌ Validatie mislukt: {humanize_error(manifest_data, e)}")
-            return {"status": "fail", "message": f"Validation error: {humanize_error(manifest_data, e)}"}
+            field_path = ".".join(str(p) for p in e.path) or "root"
+            logging.error(f"Validation error in [{field_path}]: {e.msg}")  # noqa: TRY400
+            return {"status": "fail", "message": "Validation failed"}
+        else:
+            return {"status": "pass", "message": "Manifest is valid"}
