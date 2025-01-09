@@ -1,4 +1,4 @@
-name: RHFest
+name: "RHCS Action"
 description: "Validates the manifest.json files for RotorHazard plugins"
 branding:
   icon: terminal
