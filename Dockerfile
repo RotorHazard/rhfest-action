@@ -3,8 +3,7 @@ LABEL Maintainer="Klaas Schoute"
 
 RUN pip install uv
 
-COPY . ./app
-WORKDIR /app
+COPY . .
 
 RUN uv sync --no-group dev
 
