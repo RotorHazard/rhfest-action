@@ -87,3 +87,8 @@ uv run pre-commit run
 ## License
 
 Distributed under the **MIT** License. See [`LICENSE`](LICENSE) for more information.
+
+<!-- LINK -->
+[uv]: https://docs.astral.sh/uv/
+[Python]: https://www.python.org/
+[pre-commit]: https://pre-commit.com/
