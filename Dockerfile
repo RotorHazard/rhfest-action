@@ -5,7 +5,7 @@ RUN pip install uv
 
 WORKDIR /app
 
-COPY . ./app
+COPY . .
 
 RUN uv sync --no-group dev
 
