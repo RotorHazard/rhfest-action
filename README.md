@@ -84,6 +84,13 @@ To manual run only on the staged files, use the following command:
 uv run pre-commit run
 ```
 
+## 🌟 Credits
+
+This project was inspired by:
+
+- Manifest validation in [HACS](https://hacs.xyz/)
+- Manifest validation (Hassfest) in [Home Assistant](https://www.home-assistant.io/)
+
 ## License
 
 Distributed under the **MIT** License. See [`LICENSE`](LICENSE) for more information.
