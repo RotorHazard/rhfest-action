@@ -7,4 +7,5 @@ COPY . .
 
 RUN uv sync --no-group dev
 
-ENTRYPOINT [ "uv", "run", "python", "rhfest/core.py" ]
+ENTRYPOINT ["uv", "run", "python"]
+CMD ["rhfest/core.py"]
