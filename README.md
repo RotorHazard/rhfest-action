@@ -1,6 +1,6 @@
-# RHFest Actions
+# RHFest Action
 
-`rhfest-actions` is a reusable GitHub Action that validates `manifest.json` files for RotorHazard plugins. It checks for missing fields, invalid formats, and unsupported values, and logs validation errors directly in GitHub Actions logs using **GitHub-friendly annotations**.
+`rhfest-action` is a reusable GitHub Action that validates `manifest.json` files for RotorHazard plugins. It checks for missing fields, invalid formats, and unsupported values, and logs validation errors directly in GitHub Actions logs using **GitHub-friendly annotations**.
 
 ## 🛠️ Features
 
