@@ -45,7 +45,7 @@ How to setup the development environment.
 You need the following tools to get started:
 
 - [uv] - A python virtual environment/package manager
-- [Python] 3.12 - The programming language
+- [Python] 3.13 - The programming language
 
 ### Installation
 
