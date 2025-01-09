@@ -23,6 +23,10 @@ runs:
       run: pip install voluptuous
       shell: bash
 
+    - name: Show files in the repository
+      run: ls -la
+      shell: bash
+
     - name: Run validation
-      run: python rhfest/core.py "${{ inputs.path }}"
+      run: python ./rhfest/core.py "${{ inputs.path }}"
       shell: bash
