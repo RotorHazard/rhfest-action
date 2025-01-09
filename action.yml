@@ -1,0 +1,25 @@
+name: RHFest
+description: "Validates the manifest.json files for RotorHazard plugins"
+inputs:
+  path:
+    description: "Path to the plugin directory"
+    required: false
+    default: "."
+runs:
+  using: "composite"
+  steps:
+    - name: ⤵️ Check out code from GitHub
+      uses: actions/checkout@v4.2.2
+
+    - name: 🏗 Set up UV
+      uses: astral-sh/setup-uv@v4.2.0
+      with:
+        version: "latest"
+        python-version: "3.13"
+        enable-cache: true
+
+    - name: 🏗 Install project dependencies
+      run: uv sync --no-group dev
+
+    - name: Run validation
+      run: uv run python rhfest/core.py "${{ inputs.path }}"
