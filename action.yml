@@ -1,5 +1,8 @@
 name: RHFest
 description: "Validates the manifest.json files for RotorHazard plugins"
+branding:
+  icon: terminal
+  color: gray-dark
 inputs:
   path:
     description: "Path to the plugin directory"
@@ -20,6 +23,8 @@ runs:
 
     - name: 🏗 Install project dependencies
       run: uv sync --no-group dev
+      shell: bash
 
     - name: Run validation
       run: uv run python rhfest/core.py "${{ inputs.path }}"
+      shell: bash
