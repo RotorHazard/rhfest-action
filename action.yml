@@ -19,7 +19,6 @@ runs:
       with:
         version: "latest"
         python-version: "3.13"
-        enable-cache: true
 
     - name: 🏗 Install project dependencies
       run: uv sync --no-group dev
