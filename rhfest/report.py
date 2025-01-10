@@ -30,6 +30,7 @@ class Report:
         logging.info(f"✅ Passed: {len(passed)}")
         logging.info(f"❌ Failed: {len(failed)}")
 
+        # Exit with a non-zero status code if there are failed checks.
         if len(failed) > 0:
             sys.exit(1)
         else:
