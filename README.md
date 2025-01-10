@@ -56,13 +56,13 @@ You need the following tools to get started:
 uv sync
 ```
 
-5. Setup the pre-commit check, you must run this inside the virtual environment
+3. Setup the pre-commit check, you must run this inside the virtual environment
 
 ```bash
 uv run pre-commit install
 ```
 
-6. Run the application
+4. Run the application
 
 ```bash
 uv run rhfest/core.py
