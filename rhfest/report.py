@@ -1,6 +1,7 @@
 """Report module for the RH plugin validation action."""
 
 import logging
+import sys
 
 
 class Report:
@@ -28,3 +29,8 @@ class Report:
         logging.info("========== Validation Report ==========")
         logging.info(f"✅ Passed: {len(passed)}")
         logging.info(f"❌ Failed: {len(failed)}")
+
+        if len(failed) > 0:
+            sys.exit(1)
+        else:
+            sys.exit(0)
