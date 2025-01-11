@@ -1,6 +1,7 @@
 """Core module for the rhfest package."""
 
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -61,9 +62,15 @@ def find_manifest_path(base_path: Path, report: Report) -> Path:
     return manifest_path
 
 
-def run_rhfest() -> None:
-    """Run validation for the manifest.json file."""
-    base_path = Path.cwd()
+def run_rhfest(base_path: str) -> None:
+    """Run validation for the manifest.json file.
+
+    Args:
+    ----
+        base_path: The base path of the repository.
+
+    """
+    base_path = Path(base_path).resolve()
     report = Report()
 
     logging.info(f"🔍 Searching for '{PLUGIN_DIR}' directory in {base_path}")
@@ -84,4 +91,4 @@ def run_rhfest() -> None:
 
 
 if __name__ == "__main__":
-    run_rhfest()
+    run_rhfest(os.getenv("GITHUB_WORKSPACE", Path.cwd()))
