@@ -33,7 +33,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run RHFest validation
-        uses: docker://ghcr.io/dutchdronesquad/rhfest-action:latest
+        uses: docker://ghcr.io/dutchdronesquad/rhfest-action:v1
+```
+
+## Local testing
+
+To run RHFest image locally on your plugin repository, use the following command:
+
+```bash
+docker run --rm -v "$(pwd)":/app ghcr.io/dutchdronesquad/rhfest-action:latest
 ```
 
 ## Development
