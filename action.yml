@@ -3,13 +3,6 @@ description: "Validates the manifest.json files for RotorHazard plugins"
 branding:
   icon: terminal
   color: gray-dark
-inputs:
-  path:
-    description: "Path to the plugin directory"
-    required: false
-    default: "."
 runs:
   using: "docker"
-  image: "ghcr.io/dutchdronesquad/rhfest-action:latest"
-  args:
-    - "${{ inputs.path }}"
+  image: "ghcr.io/dutchdronesquad/rhfest-action:v1.2.0"

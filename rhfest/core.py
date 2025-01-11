@@ -16,33 +16,35 @@ logging.basicConfig(
     format=" %(levelname)s %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
+PLUGIN_DIR = "custom_plugins"
 
 
-def find_manifest_path(base_path: Path) -> Path:
+def find_manifest_path(base_path: Path, report: Report) -> Path:
     """Find the manifest.json file in the custom_plugins directory.
 
     Args:
     ----
         base_path: The base path of the repository.
+        report: The report object to log messages.
 
     Returns:
     -------
         The path to the manifest.json file.
 
     """
-    logging.info("🔍 Searching for manifest.json...")
-    plugin_dirs = list(base_path.glob("custom_plugins/*"))
-    report = Report()
+    logging.info(f"🔍 Searching for manifest.json in {base_path}")
+    plugin_dirs = list(base_path.glob("*"))
 
     if len(plugin_dirs) == 0:
-        logging.error("No plugin directories found in 'custom_plugins/'.")
+        logging.error(f"No plugin domain directory found in '{base_path}'.")
         logging.info("🐛 Directory structure for debugging:")
         report.list_files_in_tree(base_path)
         sys.exit(1)
 
     if len(plugin_dirs) > 1:
         logging.error(
-            f"Multiple plugin directories found: {[p.name for p in plugin_dirs]}"
+            f"Multiple plugin directories found: "
+            f"{[p.name for p in plugin_dirs]} in '{base_path}'."
         )
         logging.info("🐛 Directory structure for debugging:")
         report.list_files_in_tree(base_path)
@@ -59,16 +61,20 @@ def find_manifest_path(base_path: Path) -> Path:
     return manifest_path
 
 
-def run_rhfest(base_path: str) -> None:
-    """Run validation for the manifest.json file.
+def run_rhfest() -> None:
+    """Run validation for the manifest.json file."""
+    base_path = Path.cwd()
+    report = Report()
 
-    Args:
-    ----
-        base_path: The base path of the repository.
+    logging.info(f"🔍 Searching for '{PLUGIN_DIR}' directory in {base_path}")
+    plugin_path: str = base_path / PLUGIN_DIR
+    if not plugin_path.exists():
+        logging.error(f"No '{PLUGIN_DIR}' directory found in '{base_path}'.")
+        logging.info("🐛 Directory structure for debugging:")
+        report.list_files_in_tree(base_path)
+        sys.exit(1)
 
-    """
-    base_path = Path(base_path).resolve()
-    manifest_path = find_manifest_path(base_path)
+    manifest_path = find_manifest_path(plugin_path, report)
     report = Report()
 
     logging.info("🚦 Starting manifest.json validation...")
@@ -78,4 +84,4 @@ def run_rhfest(base_path: str) -> None:
 
 
 if __name__ == "__main__":
-    run_rhfest(".")
+    run_rhfest()
