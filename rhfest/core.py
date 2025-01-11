@@ -32,21 +32,29 @@ def find_manifest_path(base_path: Path) -> Path:
     """
     logging.info("🔍 Searching for manifest.json...")
     plugin_dirs = list(base_path.glob("custom_plugins/*"))
+    report = Report()
 
     if len(plugin_dirs) == 0:
         logging.error("No plugin directories found in 'custom_plugins/'.")
+        logging.info("🐛 Directory structure for debugging:")
+        report.list_files_in_tree(base_path)
         sys.exit(1)
 
     if len(plugin_dirs) > 1:
         logging.error(
             f"Multiple plugin directories found: {[p.name for p in plugin_dirs]}"
         )
+        logging.info("🐛 Directory structure for debugging:")
+        report.list_files_in_tree(base_path)
         sys.exit(1)
 
     manifest_path = plugin_dirs[0] / "manifest.json"
     if not manifest_path.exists():
         logging.error(f"manifest.json not found in {manifest_path}.")
+        logging.info("🐛 Directory structure for debugging:")
+        report.list_files_in_tree(base_path)
         sys.exit(1)
+
     logging.info(f"✅ Found manifest.json at {manifest_path}")
     return manifest_path
 
