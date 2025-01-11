@@ -35,7 +35,7 @@ def find_manifest_path(base_path: Path, report: Report) -> Path:
     plugin_dirs = list(base_path.glob("*"))
 
     if len(plugin_dirs) == 0:
-        logging.error(f"No 'plugins' directory found in '{base_path}'.")
+        logging.error(f"No plugin domain directory found in '{base_path}'.")
         logging.info("🐛 Directory structure for debugging:")
         report.list_files_in_tree(base_path)
         sys.exit(1)
