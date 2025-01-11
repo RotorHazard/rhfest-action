@@ -16,6 +16,7 @@ logging.basicConfig(
     format=" %(levelname)s %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
+PLUGIN_DIR = "custom_plugins"
 
 
 def find_manifest_path(base_path: Path, report: Report) -> Path:
@@ -65,10 +66,10 @@ def run_rhfest() -> None:
     base_path = Path.cwd()
     report = Report()
 
-    logging.info(f"🔍 Searching for 'custom_plugins' directory in {base_path}")
-    plugin_path: str = base_path / "custom_plugins"
+    logging.info(f"🔍 Searching for '{PLUGIN_DIR}' directory in {base_path}")
+    plugin_path: str = base_path / PLUGIN_DIR
     if not plugin_path.exists():
-        logging.error(f"No 'custom_plugins' directory found in '{base_path}'.")
+        logging.error(f"No '{PLUGIN_DIR}' directory found in '{base_path}'.")
         logging.info("🐛 Directory structure for debugging:")
         report.list_files_in_tree(base_path)
         sys.exit(1)
