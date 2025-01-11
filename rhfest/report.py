@@ -2,6 +2,9 @@
 
 import logging
 import sys
+from pathlib import Path
+
+IGNORED_FOLDERS = {".ruff_cache", ".venv", "__pycache__", ".git", ".github"}
 
 
 class Report:
@@ -35,3 +38,28 @@ class Report:
             sys.exit(1)
         else:
             sys.exit(0)
+
+    def list_files_in_tree(self, directory: Path, prefix: str = "") -> None:
+        """Recursively list files and directories in a tree structure.
+
+        Args:
+        ----
+            directory: The directory to list files and directories from.
+            prefix: The prefix to use for each line in the tree.
+
+        """
+        entries = list(directory.iterdir())
+        entries.sort()
+
+        for index, entry in enumerate(entries):
+            if entry.is_dir() and entry.name in IGNORED_FOLDERS:
+                continue
+
+            connector = "└──" if index == len(entries) - 1 else "├──"
+            if entry.is_dir():
+                logging.info(f"{prefix}{connector} 📁 {entry.name}")
+                self.list_files_in_tree(
+                    entry, prefix + ("    " if index == len(entries) - 1 else "│   ")
+                )
+            else:
+                logging.info(f"{prefix}{connector} 📄 {entry.name}")
