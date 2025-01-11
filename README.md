@@ -36,6 +36,14 @@ jobs:
         uses: docker://ghcr.io/dutchdronesquad/rhfest-action:latest
 ```
 
+## Local testing
+
+To run RHFest image locally on your plugin repository, use the following command:
+
+```bash
+docker run --rm -v "$(pwd)":/app ghcr.io/dutchdronesquad/rhfest-action:latest
+```
+
 ## Development
 
 How to setup the development environment.
