@@ -2,6 +2,9 @@
 name: Publish Docker image
 
 on:
+  push:
+    branches:
+      - klaas-2025-011
   release:
     types: [published]
 
