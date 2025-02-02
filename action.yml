@@ -1,5 +1,5 @@
-name: "RHCS Action"
-description: "Validates the manifest.json files for RotorHazard plugins"
+name: "RHFest Action"
+description: "Validates manifests of community plugins for RotorHazard"
 branding:
   icon: terminal
   color: gray-dark
