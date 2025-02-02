@@ -3,13 +3,10 @@ name: PR Labels
 
 # yamllint disable-line rule:truthy
 on:
-  pull_request_target:
-    types:
-      - opened
-      - labeled
-      - unlabeled
-      - synchronize
-  workflow_call:
+  pull_request:
+    branches-ignore:
+      - main
+    types: [opened, labeled, unlabeled, synchronize]
 
 jobs:
   validate:
