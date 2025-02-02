@@ -5,9 +5,10 @@ A reusable GitHub Action that validates `manifest.json` files for RotorHazard pl
 ## 🛠️ Features
 
 - ✅ Schema validation for `manifest.json`
+- ✅ Plugin repository structure validation
 - 🚨 GitHub Action annotations for validation errors
 - ⚠️ Warnings for missing optional fields or extra fields
-- 📋 Validates:
+- 📋 Validates for example:
   - **domain** format (e.g., lowercase letters, numbers, underscores)
   - **codeowners** GitHub handle (`@username`)
   - **documentation** URL format
@@ -73,7 +74,7 @@ uv run pre-commit install
 4. Run the application
 
 ```bash
-uv run rhfest/core.py
+uv run python rhfest/core.py
 ```
 
 ### Run pre-commit checks
