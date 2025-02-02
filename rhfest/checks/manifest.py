@@ -28,7 +28,7 @@ MANIFEST_SCHEMA = vol.Schema(
 
 
 class ManifestCheck:
-    """Manifest check class."""
+    """Manifest check class, to validate the manifest.json file."""
 
     def __init__(self, manifest_file: Path) -> None:
         """Set the manifest file path."""
@@ -97,10 +97,7 @@ class ManifestCheck:
         if self.errors:
             for error in self.errors:
                 logging.error(error)
-            return {
-                "status": "fail",
-                "message": "Validation failed",
-            }
+            return {"status": "fail", "message": "Validation failed"}
 
         logging.info("✅ Manifest validation passed.")
         return {"status": "pass", "message": "Manifest is valid"}
