@@ -5,8 +5,8 @@ import logging
 from pathlib import Path
 
 import voluptuous as vol
-
-PYPI_DEPENDENCY_REGEX = r"^[a-zA-Z0-9_.-]+==\d+\.\d+\.\d+$"
+from const import ALLOWED_CATEGORIES_URL, PYPI_DEPENDENCY_REGEX
+from utility import fetch_categories
 
 MANIFEST_SCHEMA = vol.Schema(
     {
@@ -17,6 +17,10 @@ MANIFEST_SCHEMA = vol.Schema(
         "documentation": vol.Url(),
         "required_rhapi_version": vol.Match(r"^\d+\.\d+$"),
         "version": vol.Match(r"^\d+\.\d+\.\d+$"),
+        "category": vol.All(
+            [vol.In(fetch_categories(ALLOWED_CATEGORIES_URL))],
+            vol.Length(min=1, max=2),
+        ),
         vol.Optional("dependencies"): [vol.Match(PYPI_DEPENDENCY_REGEX)],
         vol.Optional("tags"): [str],
         vol.Optional("zip_release"): bool,
