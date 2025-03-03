@@ -1,13 +1,13 @@
 FROM python:3.13-slim
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /rhfest
 
 # Copy the source code
-COPY rhfest /app/rhfest
+COPY rhfest /rhfest
 
 # Install dependencies
 RUN pip install voluptuous requests
 
 # Run the container
-ENTRYPOINT ["python", "/app/rhfest/core.py"]
+ENTRYPOINT ["python", "/rhfest/core.py"]
