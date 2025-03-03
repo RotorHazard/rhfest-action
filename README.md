@@ -104,7 +104,7 @@ docker build -t rhfest-action:latest .
 To run the Docker image, use the following command:
 
 ```bash
-docker run --rm -v "$(pwd)":/app -v /app/.venv rhfest-action:latest
+docker run --rm -v "$(pwd)":/app rhfest-action:latest
 ```
 
 ## 🌟 Credits
