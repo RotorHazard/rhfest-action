@@ -4,7 +4,7 @@ FROM python:3.13-slim
 WORKDIR /app
 
 # Copy the source code
-COPY rhfest ./rhfest
+COPY rhfest /app/rhfest
 
 # Install dependencies
 RUN pip install voluptuous requests

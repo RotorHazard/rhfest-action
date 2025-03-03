@@ -47,4 +47,4 @@ def run_rhfest(base_path: str) -> None:
 
 
 if __name__ == "__main__":
-    run_rhfest(os.getenv("GITHUB_WORKSPACE", Path.cwd()))
+    run_rhfest(os.getenv("GITHUB_WORKSPACE", "/repo"))
