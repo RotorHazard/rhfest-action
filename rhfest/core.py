@@ -21,6 +21,19 @@ logging.basicConfig(
 PLUGIN_DIR = "custom_plugins"
 
 
+def detect_base_path() -> Path:
+    """Automatically detect the correct base path."""
+    if os.getenv("GITHUB_WORKSPACE"):
+        return Path(os.getenv("GITHUB_WORKSPACE")).resolve()
+
+    # Detect if running inside Docker
+    if Path("/.dockerenv").exists():
+        return Path("/repo").resolve()
+
+    # Fallback: Running locally, use current working directory
+    return Path.cwd().resolve()
+
+
 def run_rhfest(base_path: str) -> None:
     """Run validation for the manifest.json file.
 
@@ -47,4 +60,4 @@ def run_rhfest(base_path: str) -> None:
 
 
 if __name__ == "__main__":
-    run_rhfest(os.getenv("GITHUB_WORKSPACE", "/repo"))
+    run_rhfest(detect_base_path())
