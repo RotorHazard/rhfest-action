@@ -42,7 +42,7 @@ jobs:
 To run the RHFest action locally on your plugin repository, you can use the Docker image with the following command:
 
 ```bash
-docker run --rm -v "$(pwd)":/app ghcr.io/rotorhazard/rhfest-action:latest
+docker run --rm -v "$(pwd)":/repo ghcr.io/rotorhazard/rhfest-action:latest
 ```
 
 ## Development
@@ -104,7 +104,7 @@ docker build -t rhfest-action:latest .
 To run the Docker image, use the following command:
 
 ```bash
-docker run --rm -v "$(pwd)":/app rhfest-action:latest
+docker run --rm -v "$(pwd)":/repo rhfest-action:latest
 ```
 
 ## 🌟 Credits
