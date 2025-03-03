@@ -37,9 +37,9 @@ jobs:
         uses: docker://ghcr.io/rotorhazard/rhfest-action:v1
 ```
 
-## Local testing
+## Test Locally with Docker
 
-To run RHFest image locally on your plugin repository, use the following command:
+To run the RHFest action locally on your plugin repository, you can use the Docker image with the following command:
 
 ```bash
 docker run --rm -v "$(pwd)":/app ghcr.io/rotorhazard/rhfest-action:latest
@@ -91,6 +91,20 @@ To manual run only on the staged files, use the following command:
 
 ```bash
 uv run pre-commit run
+```
+
+### Test Docker image
+
+To build the Docker image locally, run the following command:
+
+```bash
+docker build -t rhfest-action:latest .
+```
+
+To run the Docker image, use the following command:
+
+```bash
+docker run --rm -v "$(pwd)":/app rhfest-action:latest
 ```
 
 ## 🌟 Credits

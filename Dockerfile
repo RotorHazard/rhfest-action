@@ -7,7 +7,7 @@ WORKDIR /app
 COPY rhfest ./rhfest
 
 # Install dependencies
-RUN pip install voluptuous
+RUN pip install voluptuous requests
 
 # Run the container
 ENTRYPOINT ["python", "/app/rhfest/core.py"]
