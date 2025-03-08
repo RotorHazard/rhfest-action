@@ -24,7 +24,7 @@ MANIFEST_SCHEMA = vol.Schema(
         vol.Optional("zip_filename"): vol.All(str, vol.Match(r"^[a-z0-9_-]+\.zip$")),
     },
     required=True,
-    extra=vol.PREVENT_EXTRA,
+    extra=vol.ALLOW_EXTRA,
 )
 
 
