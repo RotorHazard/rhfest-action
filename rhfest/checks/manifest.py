@@ -21,7 +21,6 @@ MANIFEST_SCHEMA = vol.Schema(
             vol.Length(min=1, max=2),
         ),
         vol.Optional("dependencies"): [vol.Match(PYPI_DEPENDENCY_REGEX)],
-        vol.Optional("tags"): [str],
         vol.Optional("zip_release"): bool,
         vol.Optional("zip_filename"): vol.All(str, vol.Match(r"^[a-z0-9_-]+\.zip$")),
     },
