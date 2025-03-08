@@ -13,7 +13,6 @@ MANIFEST_SCHEMA = vol.Schema(
         "domain": vol.All(str, vol.Match(r"^[a-z0-9_-]+$")),
         "name": str,
         "description": str,
-        "codeowners": [vol.Match(r"^@\w+")],
         "documentation": vol.Url(),
         "required_rhapi_version": vol.Match(r"^\d+\.\d+$"),
         "version": vol.Match(r"^\d+\.\d+\.\d+$"),
