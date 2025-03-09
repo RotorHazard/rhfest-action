@@ -10,6 +10,7 @@ from utility import fetch_categories
 
 MANIFEST_SCHEMA = vol.Schema(
     {
+        # Community plugin related fields
         "domain": vol.All(str, vol.Match(r"^[a-z0-9_-]+$")),
         "name": str,
         "description": str,
@@ -22,9 +23,15 @@ MANIFEST_SCHEMA = vol.Schema(
         vol.Optional("documentation_uri"): vol.Url(),
         vol.Optional("dependencies"): [vol.Match(PYPI_DEPENDENCY_REGEX)],
         vol.Optional("zip_filename"): vol.All(str, vol.Match(r"^[a-z0-9_-]+\.zip$")),
+        # Optional fields from RotorHazard
+        vol.Optional("author"): str,
+        vol.Optional("author_uri"): vol.Url(),
+        vol.Optional("info_uri"): vol.Url(),
+        vol.Optional("license"): str,
+        vol.Optional("license_uri"): vol.Url(),
     },
     required=True,
-    extra=vol.ALLOW_EXTRA,
+    extra=vol.PREVENT_EXTRA,
 )
 
 
