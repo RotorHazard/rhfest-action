@@ -10,9 +10,9 @@ A reusable GitHub Action that validates `manifest.json` files for RotorHazard pl
 - ⚠️ Warnings for missing optional fields or extra fields
 - 📋 Validates for example:
   - **domain** format (e.g., lowercase letters, numbers, underscores)
-  - **codeowners** GitHub handle (`@username`)
-  - **documentation** URL format
+  - **version** [semver](https://semver.org) format (e.g., `X.Y.Z`)
   - **dependencies** in `package==X.Y.Z` format
+  - **documentation_uri** URL format
 
 ## 🚀 How to Use
 

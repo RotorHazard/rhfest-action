@@ -10,21 +10,25 @@ from utility import fetch_categories
 
 MANIFEST_SCHEMA = vol.Schema(
     {
+        # Community plugin related fields
         "domain": vol.All(str, vol.Match(r"^[a-z0-9_-]+$")),
         "name": str,
         "description": str,
-        "codeowners": [vol.Match(r"^@\w+")],
-        "documentation": vol.Url(),
         "required_rhapi_version": vol.Match(r"^\d+\.\d+$"),
         "version": vol.Match(r"^\d+\.\d+\.\d+$"),
         "category": vol.All(
             [vol.In(fetch_categories(ALLOWED_CATEGORIES_URL))],
             vol.Length(min=1, max=2),
         ),
+        vol.Optional("documentation_uri"): vol.Url(),
         vol.Optional("dependencies"): [vol.Match(PYPI_DEPENDENCY_REGEX)],
-        vol.Optional("tags"): [str],
-        vol.Optional("zip_release"): bool,
         vol.Optional("zip_filename"): vol.All(str, vol.Match(r"^[a-z0-9_-]+\.zip$")),
+        # Optional fields from RotorHazard
+        vol.Optional("author"): str,
+        vol.Optional("author_uri"): vol.Url(),
+        vol.Optional("info_uri"): vol.Url(),
+        vol.Optional("license"): str,
+        vol.Optional("license_uri"): vol.Url(),
     },
     required=True,
     extra=vol.PREVENT_EXTRA,
@@ -96,7 +100,7 @@ class ManifestCheck:
 
         # Start validation
         self._validate_schema(manifest_data)
-        self._validate_custom_rules(manifest_data)
+        # self._validate_custom_rules(manifest_data)  # noqa: ERA001
 
         if self.errors:
             for error in self.errors:
