@@ -7,7 +7,8 @@ A reusable GitHub Action that validates `manifest.json` files for RotorHazard pl
 - ✅ Schema validation for `manifest.json`
 - ✅ Plugin repository structure validation
 - 🚨 GitHub Action annotations for validation errors
-- ⚠️ Warnings for missing optional fields or extra fields
+- ⚠️ Warnings for missing required fields
+- 🐳 Docker image for local testing (manual or pre-commit)
 - 📋 Validates for example:
   - **domain** format (e.g., lowercase letters, numbers, underscores)
   - **version** [semver](https://semver.org) format (e.g., `X.Y.Z`)
@@ -37,9 +38,11 @@ jobs:
         uses: docker://ghcr.io/rotorhazard/rhfest-action:v1
 ```
 
-## Test Locally with Docker
+## Test plugin locally
 
-To run the RHFest action locally on your plugin repository, you can use the Docker image with the following command:
+_Needs Docker installed_
+
+RHFest is available as a [Docker image](https://github.com/RotorHazard/rhfest-action/pkgs/container/rhfest-action), which makes it easy to test locally without installing any dependencies. To test your RotorHazard plugin repository, you can use the following command:
 
 ```bash
 docker run --rm -v "$(pwd)":/repo ghcr.io/rotorhazard/rhfest-action:latest
