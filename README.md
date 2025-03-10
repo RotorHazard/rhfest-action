@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run RHFest validation
-        uses: docker://ghcr.io/rotorhazard/rhfest-action:v1
+        uses: docker://ghcr.io/rotorhazard/rhfest-action:v2
 ```
 
 ## Test plugin locally
