@@ -1,9 +1,8 @@
 """Plugin repo structure checks."""
 
-import logging
 from pathlib import Path
 
-from const import MANIFEST_FILE, PLUGIN_DIR
+from const import LOGGER, MANIFEST_FILE, PLUGIN_DIR
 from report import Report
 
 
@@ -29,13 +28,13 @@ class StructureCheck:
         """Record an error message and log it."""
         self.errors.append(message)
         if self.show_debug_tree:
-            logging.info("🐛 Directory structure for debugging:")
+            LOGGER.info("🐛 Directory structure for debugging:")
             self.report.list_files_in_tree(self.base_path)
 
     def _validate_plugin_dir(self) -> None:
         """Check if the directory name exists and is correct."""
         plugin_path = self.base_path / PLUGIN_DIR
-        logging.info(f"🔍 Searching for '{PLUGIN_DIR}' directory in {self.base_path}")
+        LOGGER.info(f"🔍 Searching for '{PLUGIN_DIR}' directory in {self.base_path}")
         if not plugin_path.exists():
             self._add_error(f"No '{PLUGIN_DIR}' directory found in '{self.base_path}'.")
         else:
@@ -66,7 +65,7 @@ class StructureCheck:
         if not manifest_path.exists():
             self._add_error(f"manifest.json not found in {manifest_path}.")
         else:
-            logging.info(f"✅ Found manifest.json at {manifest_path}")
+            LOGGER.info(f"✅ Found manifest.json at {manifest_path}")
             self.manifest_path = manifest_path
 
     def run(self) -> dict[str, str]:
@@ -78,8 +77,8 @@ class StructureCheck:
 
         if self.errors:
             for error in self.errors:
-                logging.error(error)
+                LOGGER.error(error)
             return {"status": "fail", "message": "Validation failed"}
 
-        logging.info("✅ Structure validation passed.")
+        LOGGER.info("✅ Structure validation passed.")
         return {"status": "pass", "message": "Structure is valid"}

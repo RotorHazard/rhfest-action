@@ -1,8 +1,7 @@
 """Utility functions for rhfest."""
 
-import logging
-
 import requests
+from const import LOGGER
 
 
 def fetch_categories(url: str) -> list[str]:
@@ -22,5 +21,5 @@ def fetch_categories(url: str) -> list[str]:
         response.raise_for_status()
         return response.json()
     except requests.RequestException:
-        logging.exception("Failed to fetch allowed categories")
+        LOGGER.exception("Failed to fetch allowed categories")
         return []
