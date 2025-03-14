@@ -1,11 +1,10 @@
 """Manifest check module."""
 
 import json
-import logging
 from pathlib import Path
 
 import voluptuous as vol
-from const import ALLOWED_CATEGORIES_URL, PYPI_DEPENDENCY_REGEX
+from const import ALLOWED_CATEGORIES_URL, LOGGER, PYPI_DEPENDENCY_REGEX
 from utility import fetch_categories
 
 MANIFEST_SCHEMA = vol.Schema(
@@ -104,8 +103,8 @@ class ManifestCheck:
 
         if self.errors:
             for error in self.errors:
-                logging.error(error)
+                LOGGER.error(error)
             return {"status": "fail", "message": "Validation failed"}
 
-        logging.info("✅ Manifest validation passed.")
+        LOGGER.info("✅ Manifest validation passed.")
         return {"status": "pass", "message": "Manifest is valid"}
