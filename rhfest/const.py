@@ -1,11 +1,13 @@
 """Const values for rhfest."""
 
 import logging
+import os
 import sys
 from typing import Final
 
 PLUGIN_DIR: Final[str] = "custom_plugins"
 MANIFEST_FILE: Final[str] = "manifest.json"
+RHFEST_VERSION = os.getenv("RHFEST_VERSION", "dev")
 
 # Manifest checks
 PYPI_DEPENDENCY_REGEX = r"^[a-zA-Z0-9_.-]+==\d+\.\d+\.\d+$"
