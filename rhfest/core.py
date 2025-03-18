@@ -33,7 +33,8 @@ def run_rhfest(base_path: str) -> None:
     base_path = Path(base_path).resolve()
     report = Report()
 
-    LOGGER.info("🚦 Starting structure validation")
+    LOGGER.info("========== Structure Report ==========")
+    LOGGER.info("🚦 Start structure validation")
     structure_check = StructureCheck(base_path, report)
     structure_result = structure_check.run()
     report.add(structure_result)
@@ -41,9 +42,10 @@ def run_rhfest(base_path: str) -> None:
     if structure_result["status"] == "fail":
         report.generate()  # Triggers sys.exit(1)
 
-    LOGGER.info("🚦 Starting manifest.json validation")
-    result = ManifestCheck(structure_check.manifest_path).run()
-    report.add(result)
+    LOGGER.info("========== Manifest Report ==========")
+    LOGGER.info("🚦 Start manifest.json validation")
+    manifest_result = ManifestCheck(structure_check.manifest_path).run()
+    report.add(manifest_result)
     report.generate()
 
 

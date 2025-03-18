@@ -30,7 +30,7 @@ class Report:
         passed = [r for r in self.results if r["status"] == "pass"]
         failed = [r for r in self.results if r["status"] == "fail"]
 
-        LOGGER.info("========== Validation Report ==========")
+        LOGGER.info("========== Summary ==========")
         LOGGER.info(f"✅ Passed: {len(passed)}")
         LOGGER.info(f"❌ Failed: {len(failed)}")
 
