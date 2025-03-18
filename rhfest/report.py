@@ -1,8 +1,9 @@
 """Report module for the RH plugin validation action."""
 
-import logging
 import sys
 from pathlib import Path
+
+from const import LOGGER
 
 IGNORED_FOLDERS = {".ruff_cache", ".venv", "__pycache__", ".git", ".github"}
 
@@ -29,9 +30,9 @@ class Report:
         passed = [r for r in self.results if r["status"] == "pass"]
         failed = [r for r in self.results if r["status"] == "fail"]
 
-        logging.info("========== Validation Report ==========")
-        logging.info(f"✅ Passed: {len(passed)}")
-        logging.info(f"❌ Failed: {len(failed)}")
+        LOGGER.info("========== Summary ==========")
+        LOGGER.info(f"✅ Passed: {len(passed)}")
+        LOGGER.info(f"❌ Failed: {len(failed)}")
 
         # Exit with a non-zero status code if there are failed checks.
         if len(failed) > 0:
@@ -57,9 +58,9 @@ class Report:
 
             connector = "└──" if index == len(entries) - 1 else "├──"
             if entry.is_dir():
-                logging.info(f"{prefix}{connector} 📁 {entry.name}")
+                LOGGER.info(f"{prefix}{connector} 📁 {entry.name}")
                 self.list_files_in_tree(
                     entry, prefix + ("    " if index == len(entries) - 1 else "│   ")
                 )
             else:
-                logging.info(f"{prefix}{connector} 📄 {entry.name}")
+                LOGGER.info(f"{prefix}{connector} 📄 {entry.name}")

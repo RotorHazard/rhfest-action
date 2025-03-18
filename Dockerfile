@@ -4,6 +4,10 @@ ENV UV_LINK_MODE=copy
 # Set the working directory
 WORKDIR /app
 
+# Add build arguments
+ARG RHFEST_VERSION
+ENV RHFEST_VERSION=${RHFEST_VERSION}
+
 # Copy project metadata files
 COPY pyproject.toml uv.lock ./
 
