@@ -5,7 +5,7 @@ from pathlib import Path
 
 from checks.manifest import ManifestCheck
 from checks.structure import StructureCheck
-from const import LOGGER
+from const import LOGGER, RHFEST_VERSION
 from report import Report
 
 
@@ -30,6 +30,7 @@ def run_rhfest(base_path: str) -> None:
         base_path: The base path of the repository.
 
     """
+    LOGGER.info(f"🛠️  RHFest version: {RHFEST_VERSION}")
     base_path = Path(base_path).resolve()
     report = Report()
 
