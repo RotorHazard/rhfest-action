@@ -15,7 +15,7 @@ A reusable GitHub Action that validates `manifest.json` files for RotorHazard pl
 - 📋 Validates for example:
   - **domain** format (e.g., lowercase letters, numbers, underscores)
   - **version** [semver](https://semver.org) format (e.g., `X.Y.Z`)
-  - **dependencies** in `package==X.Y.Z` format
+  - **dependencies** using the [version specifiers](https://packaging.python.org/en/latest/specifications/version-specifiers/#id5) format (e.g., `==X.Y.Z`)
   - **documentation_uri** URL format
 
 ## 🚀 How to Use
