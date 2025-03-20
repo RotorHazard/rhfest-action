@@ -10,7 +10,11 @@ MANIFEST_FILE: Final[str] = "manifest.json"
 RHFEST_VERSION = os.getenv("RHFEST_VERSION", "dev")
 
 # Manifest checks
-PYPI_DEPENDENCY_REGEX = r"^[a-zA-Z0-9_.-]+==\d+\.\d+\.\d+$"
+PYPI_DEPENDENCY_REGEX = (
+    r"^[a-zA-Z0-9.-]+"  # Package name
+    r"(?:\s*(~=|==|!=|<=|>=|<|>|===)\s*\d+(?:\.\d+)*(\.\*)?)?$"  # Optional versie-spec
+)
+VERSION_REGEX = r"^\d+\.\d+\.\d+(-[a-zA-Z]+(\.\d+)?)?$"
 ALLOWED_CATEGORIES_URL = "https://rhcp.hazardcreative.com/v1/plugin/categories.json"
 
 # Logging setup
