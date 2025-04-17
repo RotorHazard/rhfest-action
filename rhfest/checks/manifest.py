@@ -4,12 +4,18 @@ import json
 from pathlib import Path
 
 import voluptuous as vol
-from const import ALLOWED_CATEGORIES_URL, LOGGER, PYPI_DEPENDENCY_REGEX, VERSION_REGEX
+from const import (
+    ALLOWED_CATEGORIES_URL,
+    GIT_URL_REGEX,
+    LOGGER,
+    PYPI_PACKAGE_REGEX,
+    VERSION_REGEX,
+)
 from utility import fetch_categories
 
 MANIFEST_SCHEMA = vol.Schema(
     {
-        # Community plugin related fields
+        # Community plugin required fields
         "domain": vol.All(str, vol.Match(r"^[a-z0-9_-]+$")),
         "name": str,
         "description": str,
@@ -19,10 +25,13 @@ MANIFEST_SCHEMA = vol.Schema(
             [vol.In(fetch_categories(ALLOWED_CATEGORIES_URL))],
             vol.Length(min=1, max=2),
         ),
+        # Community plugin optional fields
         vol.Optional("documentation_uri"): vol.Any(None, vol.Url()),
-        vol.Optional("dependencies"): [vol.Match(PYPI_DEPENDENCY_REGEX)],
+        vol.Optional("dependencies"): [
+            vol.Any(vol.Match(PYPI_PACKAGE_REGEX), vol.Match(GIT_URL_REGEX))
+        ],
         vol.Optional("zip_filename"): vol.All(str, vol.Match(r"^[a-z0-9_-]+\.zip$")),
-        # Optional fields from RotorHazard
+        # RotorHazard optional fields
         vol.Optional("author"): vol.Any(None, str),
         vol.Optional("author_uri"): vol.Any(None, vol.Url()),
         vol.Optional("info_uri"): vol.Any(None, vol.Url()),
