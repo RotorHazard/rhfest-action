@@ -5,13 +5,11 @@ from pathlib import Path
 
 import voluptuous as vol
 from const import (
-    ALLOWED_CATEGORIES_URL,
     GIT_URL_REGEX,
     LOGGER,
     PYPI_PACKAGE_REGEX,
     VERSION_REGEX,
 )
-from utility import fetch_categories
 
 MANIFEST_SCHEMA = vol.Schema(
     {
@@ -21,10 +19,6 @@ MANIFEST_SCHEMA = vol.Schema(
         "description": str,
         "required_rhapi_version": vol.Match(r"^\d+\.\d+$"),
         "version": vol.Match(VERSION_REGEX),
-        "category": vol.All(
-            [vol.In(fetch_categories(ALLOWED_CATEGORIES_URL))],
-            vol.Length(min=1, max=2),
-        ),
         # Community plugin optional fields
         vol.Optional("documentation_uri"): vol.Any(None, vol.Url()),
         vol.Optional("dependencies"): [
