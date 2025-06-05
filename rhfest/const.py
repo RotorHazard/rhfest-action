@@ -16,7 +16,6 @@ PYPI_PACKAGE_REGEX = (
 )
 GIT_URL_REGEX = r"^git\+https://[^\s]+$"
 VERSION_REGEX = r"^\d+\.\d+\.\d+(-[a-zA-Z]+(\.\d+)?)?$"
-ALLOWED_CATEGORIES_URL = "https://rhcp.hazardcreative.com/v1/plugin/categories.json"
 
 # Logging setup
 logging.addLevelName(logging.INFO, "")
