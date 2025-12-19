@@ -13,7 +13,7 @@ dependencies = [
 dev = [
   "pre-commit==4.5.1",
   "pre-commit-hooks==6.0.0",
-  "ruff==0.14.9",
+  "ruff==0.14.10",
 ]
 
 [tool.uv]
