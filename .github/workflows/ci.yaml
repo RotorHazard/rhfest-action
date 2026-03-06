@@ -42,6 +42,6 @@ jobs:
           install: true
           driver: docker-container
       - name: 🧪 Build (no push)
-        uses: docker/build-push-action@v6.19.2
+        uses: docker/build-push-action@v7.0.0
         with:
           push: false
