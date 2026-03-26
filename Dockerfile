@@ -1,4 +1,6 @@
-FROM ghcr.io/astral-sh/uv:python3.13-alpine
+# Dockerfile for RHFest GitHub Action
+ARG PYTHON_VERSION=3.13
+FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-alpine
 ENV UV_LINK_MODE=copy
 
 # Set the working directory
