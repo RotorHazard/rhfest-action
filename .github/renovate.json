@@ -17,7 +17,8 @@
       "managerFilePatterns": ["/^Dockerfile$/"],
       "matchStrings": ["ARG PYTHON_VERSION=(?<currentValue>\\d+\\.\\d+)"],
       "datasourceTemplate": "github-tags",
-      "depNameTemplate": "python/cpython"
+      "depNameTemplate": "python/cpython",
+      "extractVersion": "^v(?<version>\\d+\\.\\d+)"
     }
   ],
   "packageRules": [
