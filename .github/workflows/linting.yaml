@@ -7,9 +7,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  DEFAULT_PYTHON: "3.13"
-
 jobs:
   ruff:
     name: Ruff
@@ -23,7 +20,6 @@ jobs:
         uses: astral-sh/setup-uv@v7.6.0
         with:
           version: "latest"
-          python-version: ${{ env.DEFAULT_PYTHON }}
           enable-cache: true
       - name: 🏗 Install project dependencies
         run: uv sync --all-extras --dev
@@ -44,7 +40,6 @@ jobs:
         uses: astral-sh/setup-uv@v7.6.0
         with:
           version: "latest"
-          python-version: ${{ env.DEFAULT_PYTHON }}
           enable-cache: true
       - name: 🏗 Install project dependencies
         run: uv sync --all-extras --dev

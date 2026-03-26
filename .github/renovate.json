@@ -10,6 +10,16 @@
     "automerge": true
   },
   "commitMessagePrefix": "⬆️",
+  "ignoreDeps": ["ghcr.io/astral-sh/uv"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^Dockerfile$/"],
+      "matchStrings": ["ARG PYTHON_VERSION=(?<currentValue>\\d+\\.\\d+)"],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "python/cpython"
+    }
+  ],
   "packageRules": [
     {
       "matchManagers": ["pep621"],
@@ -38,9 +48,9 @@
       "automerge": true
     },
     {
-      "matchManagers": ["docker-compose", "dockerfile"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "automerge": false
+      "matchDepNames": ["python/cpython"],
+      "groupName": "Python base version",
+      "matchUpdateTypes": ["minor", "patch"]
     }
   ]
 }
