@@ -17,8 +17,7 @@
       "managerFilePatterns": ["/^Dockerfile$/"],
       "matchStrings": ["ARG PYTHON_VERSION=(?<currentValue>\\d+\\.\\d+)"],
       "datasourceTemplate": "github-tags",
-      "depNameTemplate": "python/cpython",
-      "extractVersion": "^v(?<version>\\d+\\.\\d+)"
+      "depNameTemplate": "python/cpython"
     }
   ],
   "packageRules": [
@@ -51,6 +50,7 @@
     {
       "matchDepNames": ["python/cpython"],
       "groupName": "Python base version",
+      "extractVersion": "^v(?<version>\\d+\\.\\d+)",
       "matchUpdateTypes": ["minor", "patch"]
     }
   ]
