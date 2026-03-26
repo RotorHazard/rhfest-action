@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.13"]
+        python: ["3.13", "3.14"]
     steps:
       - name: ⤵️ Checkout
         uses: actions/checkout@v6.0.2
@@ -45,3 +45,4 @@ jobs:
         uses: docker/build-push-action@v7.0.0
         with:
           push: false
+          build-args: PYTHON_VERSION=${{ matrix.python }}
