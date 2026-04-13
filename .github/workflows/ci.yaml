@@ -42,7 +42,7 @@ jobs:
           install: true
           driver: docker-container
       - name: 🧪 Build (no push)
-        uses: docker/build-push-action@v7.0.0
+        uses: docker/build-push-action@v7.1.0
         with:
           push: false
           build-args: PYTHON_VERSION=${{ matrix.python }}
