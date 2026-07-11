@@ -49,6 +49,10 @@
     },
     {
       "matchDepNames": ["python/cpython"],
+      "extractVersion": "^v(?<version>\\d+\\.\\d+)"
+    },
+    {
+      "matchDepNames": ["python/cpython"],
       "groupName": "Python base version",
       "matchUpdateTypes": ["minor", "patch"]
     }
