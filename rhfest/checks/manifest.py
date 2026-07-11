@@ -73,6 +73,20 @@ class ManifestCheck:
         except vol.Invalid as e:
             self._add_error(e.path, e.msg)
 
+    def _validate_domain_matches_folder(self, manifest_data: dict) -> None:
+        """Validate that the manifest domain matches its parent folder name."""
+        manifest_domain = manifest_data.get("domain")
+        if not isinstance(manifest_domain, str):
+            return
+
+        folder_domain = self.manifest_file.parent.name
+        if manifest_domain != folder_domain:
+            self._add_error(
+                ["domain"],
+                f"Domain mismatch: Folder '{folder_domain}' vs Manifest "
+                f"'{manifest_domain}'",
+            )
+
     def _validate_custom_rules(self, manifest_data: dict) -> None:
         """Perform custom validation rules.
 
@@ -102,6 +116,7 @@ class ManifestCheck:
 
         # Start validation
         self._validate_schema(manifest_data)
+        self._validate_domain_matches_folder(manifest_data)
         # self._validate_custom_rules(manifest_data)  # noqa: ERA001
 
         if self.errors:

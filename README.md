@@ -9,6 +9,7 @@ A reusable GitHub Action that validates `manifest.json` files for RotorHazard pl
   - 📁 Presence of `custom_plugins` folder
   - 📁 Presence of single plugin domain folder
   - 📄 Presence of `manifest.json` file
+  - 🔁 Plugin domain folder matches the `domain` in `manifest.json`
 - 🚨 GitHub Action annotations for validation errors
 - ⚠️ Warnings for missing required fields
 - 🐳 Docker image for local testing (manual or pre-commit)
