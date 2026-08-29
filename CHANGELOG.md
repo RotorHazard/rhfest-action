@@ -2,7 +2,7 @@
 
 This changelog highlights user-facing changes in RHFest. The complete list of merged pull requests remains available in the corresponding GitHub release.
 
-## [Unreleased]
+## [3.2.3] - 2026-08-30
 
 ### Added
 
@@ -172,7 +172,8 @@ This changelog highlights user-facing changes in RHFest. The complete list of me
 - Initial release of the RHFest GitHub Action with plugin repository structure and manifest validation.
 - Added validation logging and GitHub Actions integration.
 
-[Unreleased]: https://github.com/RotorHazard/rhfest-action/compare/v3.2.2...develop
+[Unreleased]: https://github.com/RotorHazard/rhfest-action/compare/v3.2.3...develop
+[3.2.3]: https://github.com/RotorHazard/rhfest-action/compare/v3.2.2...v3.2.3
 [3.2.2]: https://github.com/RotorHazard/rhfest-action/compare/v3.2.1...v3.2.2
 [3.2.1]: https://github.com/RotorHazard/rhfest-action/compare/v3.2.0...v3.2.1
 [3.2.0]: https://github.com/RotorHazard/rhfest-action/compare/v3.1.0...v3.2.0
