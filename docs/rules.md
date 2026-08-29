@@ -7,7 +7,7 @@ are part of RHFest's public output and must not be reassigned to another meaning
 
 - `STRxxx` — repository and plugin structure
 - `MANxxx` — `manifest.json` loading and validation
-- `RHxxx` — reserved for future RotorHazard-specific Python rules
+- `RHxxx` — RotorHazard-specific Python source analysis
 
 ## Structure rules
 
@@ -37,6 +37,52 @@ therefore remains an extra manifest key under the active schema.
 ### MAN002 — Manifest domain
 
 Require the manifest `domain` to match the name of its parent folder.
+
+## RotorHazard source rules
+
+### RH000 — Python source parsing
+
+Discover all `.py` files below the validated plugin directory in deterministic
+repository-relative path order. Each file is read and parsed once with Python's
+standard `ast` module, then retained in `ValidationContext` for all subsequent
+`RHxxx` rules.
+
+Unreadable UTF-8 source and Python syntax errors produce `RH000` diagnostics
+through the shared reporter. A parse failure in one file does not prevent rules
+from analyzing other successfully parsed files. Python files outside the
+discovered plugin directory are not analyzed.
+
+### RH001 — Private RHAPI access
+
+Reject access to `_racecontext` through an RHAPI-derived expression. RotorHazard
+stores its internal race context on the root API object and its public namespace
+implementations, but this is an implementation detail rather than part of the
+plugin API contract. See the pinned RotorHazard
+[`RHAPI.py` implementation](https://github.com/RotorHazard/RotorHazard/blob/main/src/server/RHAPI.py#L29).
+
+For example, RH001 detects all of these accesses:
+
+```python
+def initialize(rhapi):
+    context = rhapi._racecontext
+    database_context = rhapi.db._racecontext
+
+    database = rhapi.db
+    alias_context = database._racecontext
+```
+
+The rule recognizes parameters named `rhapi`, following RotorHazard's documented
+`initialize(rhapi)` and plugin callback convention. Provenance is retained
+through simple local name aliases and attribute chains. Reassignment and local
+parameter shadowing invalidate an alias; conditional aliases are retained only
+when every branch establishes them.
+
+The analysis is deliberately conservative. It does not infer provenance through
+function calls, containers, imports, tuple unpacking, lambdas, or
+interprocedural data flow. It does not flag unrelated objects merely because
+they expose `_racecontext`, and it does not prohibit other underscore-prefixed
+attributes. Comments and string literals are naturally ignored by the AST
+analysis.
 
 ## Diagnostic output
 
@@ -77,6 +123,11 @@ automatically.
 5. Document its stable code in this catalog.
 6. Add focused engine, rule, reporter, and outcome tests as appropriate.
 
+Python source rules must consume the parsed `PythonSource` values exposed through
+`Capability.PYTHON_SOURCES`; they must not rediscover files or parse source a
+second time. Keep provenance helpers in `rhfest/source.py` reusable when a
+future rule needs the same conservative symbol knowledge.
+
 Structure errors prevent the manifest phase from running. Invalid JSON and
 file-read errors retain their existing exception behavior; the rule-engine
 migration does not define a new recovery policy for them.
@@ -97,8 +148,8 @@ Phases and their success dependencies are declarative:
 | `manifest` | `MANxxx` | `structure` |
 | `source` | `RHxxx` | `structure` |
 
-The reserved `source` phase is independent of manifest policy. A future Python
-source rule can therefore run when repository discovery succeeds, even if
+The `source` phase is independent of manifest policy. Python source rules can
+therefore run when repository discovery succeeds, even if
 `manifest.json` contains a schema or domain error.
 
 Future diagnostic selection or ignore behavior must filter collected

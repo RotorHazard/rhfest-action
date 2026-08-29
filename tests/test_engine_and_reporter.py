@@ -64,7 +64,7 @@ class WarningRule(Rule):
 class SourceRule(Rule):
     """Future source rule used to verify declarative phase behavior."""
 
-    code = "RH001"
+    code = "RH099"
     family = RuleFamily.ROTORHAZARD
     phase = RulePhase.SOURCE
     order = 10
@@ -141,7 +141,7 @@ def test_source_phase_requires_structure_but_not_manifest_success(
 
     assert "MAN001" in result.executed_rules
     assert "RH001" in result.executed_rules
-    assert [item.code for item in result.diagnostics] == ["MAN001", "RH001"]
+    assert [item.code for item in result.diagnostics] == ["MAN001", "RH099"]
 
 
 def test_source_phase_is_blocked_after_structure_failure(tmp_path: Path) -> None:

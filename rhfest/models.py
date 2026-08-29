@@ -1,5 +1,6 @@
 """Shared models for RHFest validation rules and diagnostics."""
 
+import ast
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -37,6 +38,17 @@ class Capability(StrEnum):
     MANIFEST_PATH = "manifest_path"
     MANIFEST_DATA = "manifest_data"
     MANIFEST_SOURCE = "manifest_source"
+    PYTHON_SOURCES = "python_sources"
+
+
+@dataclass(frozen=True, slots=True)
+class PythonSource:
+    """A plugin Python file parsed once for all source rules."""
+
+    path: Path
+    relative_path: str
+    source: str
+    tree: ast.Module
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +95,7 @@ class ValidationContext:
     manifest_path: Path | None = None
     manifest_data: Any | None = None
     manifest_source: str | None = None
+    python_sources: tuple[PythonSource, ...] | None = None
 
     def repository_path(self, path: Path) -> str:
         """Return a repository-relative POSIX path for a diagnostic."""

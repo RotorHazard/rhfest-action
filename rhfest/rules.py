@@ -1,5 +1,6 @@
 """Rule contract and the built-in RHFest rules."""
 
+import ast
 import json
 import re
 from abc import ABC, abstractmethod
@@ -17,11 +18,13 @@ from rhfest.const import (
 from rhfest.models import (
     Capability,
     Diagnostic,
+    PythonSource,
     RuleFamily,
     RulePhase,
     Severity,
     ValidationContext,
 )
+from rhfest.source import RhapiProvenanceAnalyzer
 
 MANIFEST_SCHEMA = vol.Schema(
     {
@@ -261,6 +264,120 @@ class ManifestDomainRule(Rule):
         ]
 
 
+class PythonSourceRule(Rule):
+    """RH000: discover and parse plugin Python sources once."""
+
+    code = "RH000"
+    family = RuleFamily.ROTORHAZARD
+    phase = RulePhase.SOURCE
+    order = 0
+    requires = frozenset({Capability.PLUGIN_DIR})
+
+    def check(self, context: ValidationContext) -> list[Diagnostic]:
+        """Populate reusable AST context and report unreadable or invalid files."""
+        if context.plugin_dir is None:
+            return []
+
+        plugin_root = context.plugin_dir.resolve()
+        diagnostics: list[Diagnostic] = []
+        sources: list[PythonSource] = []
+        candidates = sorted(
+            context.plugin_dir.rglob("*.py"),
+            key=context.repository_path,
+        )
+        for path in candidates:
+            relative_path = context.repository_path(path)
+            try:
+                resolved_path = path.resolve()
+                if not resolved_path.is_relative_to(plugin_root) or not path.is_file():
+                    continue
+                source = path.read_text(encoding="utf-8")
+                tree = ast.parse(source, filename=relative_path)
+            except SyntaxError as error:
+                diagnostics.append(self._syntax_diagnostic(relative_path, error))
+                continue
+            except (OSError, UnicodeError) as error:
+                diagnostics.append(
+                    self.diagnostic(
+                        f"Unable to read Python source: {error}.",
+                        path=relative_path,
+                        help_text="Ensure the file is readable UTF-8 source.",
+                    )
+                )
+                continue
+            sources.append(PythonSource(path, relative_path, source, tree))
+
+        context.python_sources = tuple(sources)
+        return diagnostics
+
+    def _syntax_diagnostic(
+        self,
+        relative_path: str,
+        error: SyntaxError,
+    ) -> Diagnostic:
+        """Convert a parser failure to the shared diagnostic contract."""
+        line = error.lineno if error.lineno is not None and error.lineno > 0 else None
+        column = error.offset if error.offset is not None and error.offset > 0 else None
+        end_line = error.end_lineno if error.end_lineno == line else None
+        end_column = (
+            error.end_offset
+            if end_line is not None
+            and error.end_offset is not None
+            and error.end_offset > 0
+            else None
+        )
+        return self.diagnostic(
+            f"Unable to parse Python source: {error.msg}.",
+            path=relative_path,
+            line=line,
+            column=column,
+            end_line=end_line,
+            end_column=end_column,
+            help_text="Fix the Python syntax before running source rules.",
+        )
+
+
+class PrivateRhapiAccessRule(Rule):
+    """RH001: prohibit access to private RotorHazard race context state."""
+
+    code = "RH001"
+    family = RuleFamily.ROTORHAZARD
+    phase = RulePhase.SOURCE
+    order = 10
+    requires = frozenset({Capability.PYTHON_SOURCES})
+
+    def check(self, context: ValidationContext) -> list[Diagnostic]:
+        """Find `_racecontext` access on conservatively derived RHAPI values."""
+        diagnostics: list[Diagnostic] = []
+        for source in context.python_sources or ():
+            private_accesses: list[ast.Attribute] = []
+            analyzer = RhapiProvenanceAnalyzer(private_accesses.append)
+            analyzer.analyze(source.tree)
+            diagnostics.extend(
+                self._diagnostic(source, node)
+                for node in sorted(
+                    private_accesses,
+                    key=lambda item: (item.end_lineno or 0, item.end_col_offset or 0),
+                )
+            )
+        return diagnostics
+
+    def _diagnostic(
+        self,
+        source: PythonSource,
+        node: ast.Attribute,
+    ) -> Diagnostic:
+        """Build a precise diagnostic over the private attribute name."""
+        location = locate_attribute(source.source, node)
+        return self.diagnostic(
+            "Private RHAPI member '_racecontext' accessed. Plugins must use "
+            "the public RHAPI interface.",
+            path=source.relative_path,
+            help_text="Use a supported RHAPI namespace or method instead.",
+            **location,
+        )
+
+
 def locate_manifest_key(
     context: ValidationContext,
     key: str,
@@ -283,10 +400,32 @@ def locate_manifest_key(
     }
 
 
+def locate_attribute(source: str, node: ast.Attribute) -> dict[str, int]:
+    """Return a one-based source range for an AST attribute name."""
+    line = node.end_lineno or node.lineno
+    end_offset = node.end_col_offset
+    if end_offset is None:
+        return {"line": line, "column": node.col_offset + 1}
+
+    source_line = source.splitlines()[line - 1]
+    encoded_line = source_line.encode("utf-8")
+    start_offset = end_offset - len(node.attr.encode("utf-8"))
+    column = len(encoded_line[:start_offset].decode("utf-8")) + 1
+    end_column = len(encoded_line[:end_offset].decode("utf-8")) + 1
+    return {
+        "line": line,
+        "column": column,
+        "end_line": line,
+        "end_column": end_column,
+    }
+
+
 DEFAULT_RULES: tuple[Rule, ...] = (
     CustomPluginsRule(),
     SinglePluginRule(),
     ManifestExistsRule(),
     ManifestSchemaRule(),
     ManifestDomainRule(),
+    PythonSourceRule(),
+    PrivateRhapiAccessRule(),
 )
