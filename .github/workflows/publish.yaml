@@ -44,8 +44,8 @@ jobs:
           build-args: |
             RHFEST_VERSION=${{ github.event.release.tag_name }}
 
-  update-major-tag:
-    name: 🏷️ Update major Action tag
+  update-version-tags:
+    name: 🏷️ Update moving Action tags
     needs: publish-to-registry
     runs-on: ubuntu-latest
     permissions:
@@ -56,18 +56,21 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
-      - name: Update major version tag
+      - name: Update major and minor version tags
         shell: bash
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^v([0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Skipping major tag update for non-stable release: $RELEASE_TAG"
+            echo "Skipping moving tag updates for non-stable release: $RELEASE_TAG"
             exit 0
           fi
 
           major_tag="${RELEASE_TAG%%.*}"
+          minor_tag="${RELEASE_TAG%.*}"
           release_sha="$(git rev-parse HEAD)"
 
-          git tag --force "$major_tag" "$release_sha"
-          git push origin "refs/tags/$major_tag" --force
+          for version_tag in "$major_tag" "$minor_tag"; do
+            git tag --force "$version_tag" "$release_sha"
+            git push origin "refs/tags/$version_tag" --force
+          done

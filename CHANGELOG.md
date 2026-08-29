@@ -6,7 +6,7 @@ This changelog highlights user-facing changes in RHFest. The complete list of me
 
 ### Added
 
-- Stable releases now publish a moving major Git tag, such as `v3`, for users who prefer automatic backwards-compatible Action updates.
+- Stable releases now publish moving major and minor Git tags, such as `v3` and `v3.2`, for users who prefer automatic compatible Action updates.
 
 ## [3.2.2] - 2026-08-29
 

@@ -45,10 +45,13 @@ jobs:
         uses: RotorHazard/rhfest-action@v3.2.2
 ```
 
-Pinning a complete release tag keeps validation reproducible. To follow future
-backwards-compatible v3 releases automatically instead, use
-`RotorHazard/rhfest-action@v3`. The moving major tag trades strict
-reproducibility for automatic updates.
+Pinning a complete release tag keeps validation reproducible. Moving tags are
+also available for users who prefer automatic compatible updates:
+
+- `RotorHazard/rhfest-action@v3.2` follows patch releases within v3.2.
+- `RotorHazard/rhfest-action@v3` follows minor and patch releases within v3.
+
+Moving tags trade strict reproducibility for automatic updates.
 
 To adopt rule families incrementally or suppress a deliberate exception, pass
 the corresponding Action inputs:
@@ -84,8 +87,8 @@ RHFest is available as a [Docker image](https://github.com/RotorHazard/rhfest-ac
 docker run --rm -v "$(pwd)":/repo ghcr.io/rotorhazard/rhfest-action:v3.2.2
 ```
 
-The moving `v3` container tag is also available for users who prefer automatic
-compatible updates.
+The moving `v3.2` and `v3` container tags are also available for users who
+prefer automatic compatible updates.
 
 Rule selection flags can be passed directly to the container:
 
