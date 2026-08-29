@@ -45,6 +45,28 @@ jobs:
         uses: docker://ghcr.io/rotorhazard/rhfest-action:v3
 ```
 
+To adopt rule families incrementally or suppress a deliberate exception, pass
+selection through the step environment:
+
+```yaml
+      - name: Run selected RHFest validation
+        uses: docker://ghcr.io/rotorhazard/rhfest-action:v3
+        env:
+          RHFEST_SELECT: "STR,MAN,RH002"
+          RHFEST_IGNORE: "MAN002"
+```
+
+When the repository action is used directly, the same values are available as
+declared Action inputs:
+
+```yaml
+      - name: Run selected RHFest validation
+        uses: RotorHazard/rhfest-action@v3
+        with:
+          select: "STR,MAN,RH002"
+          ignore: "MAN002"
+```
+
 ## Test plugin locally
 
 _Needs Docker installed_
@@ -53,6 +75,14 @@ RHFest is available as a [Docker image](https://github.com/RotorHazard/rhfest-ac
 
 ```bash
 docker run --rm -v "$(pwd)":/repo ghcr.io/rotorhazard/rhfest-action:latest
+```
+
+Rule selection flags can be passed directly to the container:
+
+```bash
+docker run --rm -v "$(pwd)":/repo \
+  ghcr.io/rotorhazard/rhfest-action:latest \
+  --select STR,MAN,RH002 --ignore MAN002
 ```
 
 ## Development
@@ -86,6 +116,23 @@ uv run pre-commit install
 ```bash
 uv run python -m rhfest.core
 ```
+
+Use `--select` and `--ignore` with comma-separated exact codes or complete rule
+families. Options may be repeated:
+
+```bash
+uv run python -m rhfest.core --select STR,MAN --select RH002 --ignore MAN002
+```
+
+Selectors are case-insensitive. `ignore` is applied after `select` and therefore
+always takes precedence. Unknown codes, unknown families, partial codes, and
+empty selectors are configuration errors with exit status `2`. When no selector
+is configured, RHFest continues to run and report every registered rule.
+
+`RHFEST_SELECT` and `RHFEST_IGNORE` provide the equivalent environment-based
+configuration. The GitHub Action inputs use the same parser through
+`INPUT_SELECT` and `INPUT_IGNORE`. Explicit CLI flags override their respective
+environment value.
 
 RHFest validates the current directory outside GitHub Actions and Docker. Set
 `GITHUB_WORKSPACE` to validate another path using the same discovery behavior as
