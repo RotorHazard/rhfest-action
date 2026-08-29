@@ -1,0 +1,8 @@
+---
+- id: rhfest
+  name: 🎉 Check RHFest
+  description: Validate a RotorHazard plugin repository with RHFest
+  entry: python -m rhfest.core
+  language: docker
+  pass_filenames: false
+  always_run: true

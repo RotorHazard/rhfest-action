@@ -7,8 +7,29 @@ from typing import Any
 
 import pytest
 
-from rhfest.core import run_rhfest
+from rhfest.core import detect_base_path, run_rhfest
 from rhfest.report import Reporter
+
+
+def test_detect_base_path_prefers_github_workspace(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """GitHub Actions should use the explicitly provided workspace."""
+    monkeypatch.setenv("GITHUB_WORKSPACE", str(tmp_path))
+
+    assert detect_base_path() == tmp_path.resolve()
+
+
+def test_detect_base_path_uses_current_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Pre-commit's Docker hook runs with the repository as working directory."""
+    monkeypatch.delenv("GITHUB_WORKSPACE", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    assert detect_base_path() == tmp_path.resolve()
 
 
 @pytest.mark.parametrize(

@@ -16,8 +16,9 @@ def detect_base_path() -> Path:
     """Automatically detect the repository path to validate."""
     if workspace := os.getenv("GITHUB_WORKSPACE"):
         return Path(workspace).resolve()
-    if Path("/.dockerenv").exists():
-        return Path("/repo").resolve()
+    docker_repository = Path("/repo")
+    if docker_repository.is_dir():
+        return docker_repository.resolve()
     return Path.cwd().resolve()
 
 

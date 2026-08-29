@@ -5,7 +5,7 @@ from typing import Final
 
 PLUGIN_DIR: Final[str] = "custom_plugins"
 MANIFEST_FILE: Final[str] = "manifest.json"
-RHFEST_VERSION = os.getenv("RHFEST_VERSION", "dev")
+RHFEST_VERSION: Final[str] = os.getenv("RHFEST_VERSION") or "dev"
 
 # Manifest checks
 PYPI_PACKAGE_REGEX = (
