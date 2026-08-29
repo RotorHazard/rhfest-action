@@ -34,6 +34,7 @@ class Capability(StrEnum):
     """Typed context values that rules can require."""
 
     PLUGIN_PATH = "plugin_path"
+    PLUGIN_ENTRY = "plugin_entry"
     PLUGIN_DIR = "plugin_dir"
     MANIFEST_PATH = "manifest_path"
     MANIFEST_DOCUMENT = "manifest_document"
@@ -100,6 +101,7 @@ class ValidationContext:
 
     base_path: Path
     plugin_path: Path | None = None
+    plugin_entry: Path | None = None
     plugin_dir: Path | None = None
     manifest_path: Path | None = None
     manifest_source: str | None = None
