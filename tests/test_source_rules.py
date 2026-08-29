@@ -34,18 +34,35 @@ def source_diagnostics(repository: Path) -> tuple[Diagnostic, ...]:
 
 
 @pytest.mark.parametrize(
-    "expression",
+    ("expression", "expected_help"),
     [
-        "rhapi._racecontext",
-        "rhapi.db._racecontext",
-        "rhapi.race._racecontext",
-        "rhapi.events._racecontext",
+        (
+            "rhapi._racecontext",
+            "Use a supported public RHAPI namespace such as `rhapi.db`, "
+            "`rhapi.race`, or `rhapi.events`.",
+        ),
+        (
+            "rhapi.db._racecontext",
+            "Use a documented member of the public `rhapi.db` API instead of "
+            "`_racecontext`.",
+        ),
+        (
+            "rhapi.race._racecontext",
+            "Use a documented member of the public `rhapi.race` API instead of "
+            "`_racecontext`.",
+        ),
+        (
+            "rhapi.events._racecontext",
+            "Use a documented member of the public `rhapi.events` API instead "
+            "of `_racecontext`.",
+        ),
     ],
 )
 def test_rh001_detects_direct_and_namespace_access(
     repository_factory: Callable[[dict[str, Any], str], Path],
     valid_manifest: dict[str, Any],
     expression: str,
+    expected_help: str,
 ) -> None:
     """Root and public-namespace chains retain RHAPI provenance."""
     repository = repository_factory(valid_manifest)
@@ -65,21 +82,30 @@ def test_rh001_detects_direct_and_namespace_access(
         line.index("_racecontext") + 1,
         2,
         line.index("_racecontext") + len("_racecontext") + 1,
-        "Use a supported RHAPI namespace or method instead.",
+        expected_help,
     )
 
 
 @pytest.mark.parametrize(
-    "assignment",
+    ("assignment", "expected_help"),
     [
-        "api = rhapi\n    value = api._racecontext",
-        "database = rhapi.db\n    value = database._racecontext",
+        (
+            "api = rhapi\n    value = api._racecontext",
+            "Use a supported public RHAPI namespace such as `rhapi.db`, "
+            "`rhapi.race`, or `rhapi.events`.",
+        ),
+        (
+            "database = rhapi.db\n    value = database._racecontext",
+            "Use a documented member of the public `rhapi.db` API instead of "
+            "`_racecontext`.",
+        ),
     ],
 )
 def test_rh001_detects_simple_aliases(
     repository_factory: Callable[[dict[str, Any], str], Path],
     valid_manifest: dict[str, Any],
     assignment: str,
+    expected_help: str,
 ) -> None:
     """Simple local aliases preserve root or namespace provenance."""
     repository = repository_factory(valid_manifest)
@@ -89,7 +115,10 @@ def test_rh001_detects_simple_aliases(
         f"def initialize(rhapi):\n    {assignment}\n",
     )
 
-    assert [item.code for item in source_diagnostics(repository)] == ["RH001"]
+    diagnostics = source_diagnostics(repository)
+
+    assert [item.code for item in diagnostics] == ["RH001"]
+    assert diagnostics[0].help == expected_help
 
 
 def test_rh001_collects_nested_violations_in_deterministic_order(
@@ -208,6 +237,32 @@ def test_rh001_retains_unmodified_provenance_after_complex_control_flow(
     diagnostics = source_diagnostics(repository)
 
     assert [(item.code, item.line) for item in diagnostics] == [("RH001", 9)]
+
+
+def test_rh001_uses_generic_help_for_ambiguous_branch_namespace(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+) -> None:
+    """Different proven namespaces retain RHAPI provenance without guessing."""
+    repository = repository_factory(valid_manifest)
+    write_plugin_source(
+        repository,
+        "__init__.py",
+        "def initialize(rhapi):\n"
+        "    if condition:\n"
+        "        api = rhapi.db\n"
+        "    else:\n"
+        "        api = rhapi.race\n"
+        "    return api._racecontext\n",
+    )
+
+    diagnostics = source_diagnostics(repository)
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0].help == (
+        "Use a supported public RHAPI namespace such as `rhapi.db`, "
+        "`rhapi.race`, or `rhapi.events`."
+    )
 
 
 def test_rh001_does_not_follow_calls_or_containers(

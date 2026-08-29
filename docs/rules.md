@@ -79,6 +79,14 @@ through simple local name aliases and attribute chains. Reassignment and local
 parameter shadowing invalidate an alias; conditional aliases are retained only
 when every branch establishes them.
 
+Diagnostics retain a confidently established public namespace through aliases.
+For example, both `rhapi.db._racecontext` and a `database = rhapi.db` alias
+suggest using a documented member of the public `rhapi.db` API instead. Root
+access and control-flow paths with different possible namespaces receive general
+public-RHAPI guidance instead of an uncertain replacement. RH001 does not offer
+an automatic fix because the intended public operation cannot be inferred safely
+from `_racecontext` alone.
+
 The analysis is deliberately conservative. It does not infer provenance through
 function calls, containers, imports, tuple unpacking, lambdas, or
 interprocedural data flow. It does not flag unrelated objects merely because

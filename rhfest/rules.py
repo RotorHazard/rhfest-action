@@ -24,7 +24,7 @@ from rhfest.models import (
     Severity,
     ValidationContext,
 )
-from rhfest.source import RhapiProvenanceAnalyzer
+from rhfest.source import RhapiProvenance, RhapiProvenanceAnalyzer
 
 MANIFEST_SCHEMA = vol.Schema(
     {
@@ -361,14 +361,21 @@ class PrivateRhapiAccessRule(Rule):
         """Find `_racecontext` access on conservatively derived RHAPI values."""
         diagnostics: list[Diagnostic] = []
         for source in context.python_sources or ():
-            private_accesses: list[ast.Attribute] = []
-            analyzer = RhapiProvenanceAnalyzer(private_accesses.append)
+            private_accesses: list[tuple[ast.Attribute, RhapiProvenance]] = []
+            analyzer = RhapiProvenanceAnalyzer(
+                lambda node, provenance, accesses=private_accesses: accesses.append(
+                    (node, provenance)
+                )
+            )
             analyzer.analyze(source.tree)
             diagnostics.extend(
-                self._diagnostic(source, node)
-                for node in sorted(
+                self._diagnostic(source, node, provenance)
+                for node, provenance in sorted(
                     private_accesses,
-                    key=lambda item: (item.end_lineno or 0, item.end_col_offset or 0),
+                    key=lambda item: (
+                        item[0].end_lineno or 0,
+                        item[0].end_col_offset or 0,
+                    ),
                 )
             )
         return diagnostics
@@ -377,6 +384,7 @@ class PrivateRhapiAccessRule(Rule):
         self,
         source: PythonSource,
         node: ast.Attribute,
+        provenance: RhapiProvenance,
     ) -> Diagnostic:
         """Build a precise diagnostic over the private attribute name."""
         location = locate_attribute(source.source, node)
@@ -384,8 +392,21 @@ class PrivateRhapiAccessRule(Rule):
             "Private RHAPI member '_racecontext' accessed. Plugins must use "
             "the public RHAPI interface.",
             path=source.relative_path,
-            help_text="Use a supported RHAPI namespace or method instead.",
+            help_text=self._help_text(provenance),
             **location,
+        )
+
+    @staticmethod
+    def _help_text(provenance: RhapiProvenance) -> str:
+        """Suggest a public API only when namespace provenance is certain."""
+        if provenance.namespace is not None:
+            return (
+                "Use a documented member of the public "
+                f"`rhapi.{provenance.namespace}` API instead of `_racecontext`."
+            )
+        return (
+            "Use a supported public RHAPI namespace such as `rhapi.db`, "
+            "`rhapi.race`, or `rhapi.events`."
         )
 
 

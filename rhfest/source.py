@@ -2,61 +2,118 @@
 
 import ast
 from collections.abc import Callable
+from dataclasses import dataclass
+
+PUBLIC_RHAPI_NAMESPACES = frozenset(
+    {
+        "classrank",
+        "config",
+        "db",
+        "eventresults",
+        "events",
+        "fields",
+        "filters",
+        "heatgen",
+        "interface",
+        "io",
+        "language",
+        "led",
+        "points",
+        "race",
+        "sensors",
+        "server",
+        "ui",
+        "utils",
+        "vrxcontrol",
+    }
+)
 
 
-def is_rhapi_derived(node: ast.AST, derived: set[str]) -> bool:
-    """Return whether a simple name/attribute chain has RHAPI provenance."""
+@dataclass(frozen=True, slots=True)
+class RhapiProvenance:
+    """Known public RHAPI namespace for one derived expression, if any."""
+
+    namespace: str | None = None
+
+
+ROOT_RHAPI = RhapiProvenance()
+type ProvenanceMap = dict[str, RhapiProvenance]
+type PrivateAccessCallback = Callable[[ast.Attribute, RhapiProvenance], None]
+
+
+def get_rhapi_provenance(
+    node: ast.AST,
+    derived: ProvenanceMap,
+) -> RhapiProvenance | None:
+    """Return provenance for a simple RHAPI-derived name/attribute chain."""
     if isinstance(node, ast.Name):
-        return node.id in derived
+        return derived.get(node.id)
     if isinstance(node, ast.Attribute):
-        return is_rhapi_derived(node.value, derived)
-    return False
+        provenance = get_rhapi_provenance(node.value, derived)
+        if (
+            provenance is not None
+            and provenance.namespace is None
+            and node.attr in PUBLIC_RHAPI_NAMESPACES
+        ):
+            return RhapiProvenance(node.attr)
+        return provenance
+    return None
 
 
 def bind_target(
     target: ast.AST,
-    derived: set[str],
+    derived: ProvenanceMap,
     *,
-    value_is_derived: bool,
+    provenance: RhapiProvenance | None,
 ) -> None:
     """Bind a simple name alias or invalidate names in a complex target."""
     if isinstance(target, ast.Name):
-        if value_is_derived:
-            derived.add(target.id)
+        if provenance is not None:
+            derived[target.id] = provenance
         else:
-            derived.discard(target.id)
+            derived.pop(target.id, None)
         return
     if isinstance(target, (ast.Tuple, ast.List)):
         for item in target.elts:
-            bind_target(item, derived, value_is_derived=False)
+            bind_target(item, derived, provenance=None)
 
 
-def invalidate_pattern(pattern: ast.pattern, derived: set[str]) -> None:
+def invalidate_pattern(pattern: ast.pattern, derived: ProvenanceMap) -> None:
     """Invalidate names captured by a structural pattern."""
     for node in ast.walk(pattern):
         if isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name is not None:
-            derived.discard(node.name)
+            derived.pop(node.name, None)
         elif isinstance(node, ast.MatchMapping) and node.rest is not None:
-            derived.discard(node.rest)
+            derived.pop(node.rest, None)
+
+
+def common_provenance(*states: ProvenanceMap) -> ProvenanceMap:
+    """Return bindings proven as RHAPI-derived on every supplied path."""
+    common_names = set.intersection(*(set(state) for state in states))
+    merged: ProvenanceMap = {}
+    for name in common_names:
+        provenances = {state[name] for state in states}
+        merged[name] = provenances.pop() if len(provenances) == 1 else ROOT_RHAPI
+    return merged
 
 
 class RhapiProvenanceAnalyzer:
     """Find private access on locally established RHAPI-derived expressions."""
 
-    def __init__(self, on_private_access: Callable[[ast.Attribute], None]) -> None:
+    def __init__(self, on_private_access: PrivateAccessCallback) -> None:
         """Configure a callback for each offending attribute access."""
         self._on_private_access = on_private_access
 
     def analyze(self, tree: ast.Module) -> None:
         """Analyze a module in source order with scope-local provenance."""
-        self._visit_block(tree.body, set())
+        self._visit_block(tree.body, {})
 
-    def _visit_block(self, statements: list[ast.stmt], derived: set[str]) -> None:
+    def _visit_block(self, statements: list[ast.stmt], derived: ProvenanceMap) -> None:
         """Analyze statements sequentially, updating proven local aliases."""
         for statement in statements:
             self._visit_statement(statement, derived)
 
-    def _visit_statement(self, statement: ast.stmt, derived: set[str]) -> None:
+    def _visit_statement(self, statement: ast.stmt, derived: ProvenanceMap) -> None:
         """Analyze one statement and apply its straightforward bindings."""
         if self._visit_definition(statement, derived):
             return
@@ -66,7 +123,11 @@ class RhapiProvenanceAnalyzer:
             return
         self._visit_binding_or_expression(statement, derived)
 
-    def _visit_definition(self, statement: ast.stmt, derived: set[str]) -> bool:
+    def _visit_definition(
+        self,
+        statement: ast.stmt,
+        derived: ProvenanceMap,
+    ) -> bool:
         """Analyze a function or class definition when applicable."""
         if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
             self._visit_function(statement, derived)
@@ -76,13 +137,17 @@ class RhapiProvenanceAnalyzer:
             return True
         return False
 
-    def _visit_assignment(self, statement: ast.stmt, derived: set[str]) -> bool:
+    def _visit_assignment(
+        self,
+        statement: ast.stmt,
+        derived: ProvenanceMap,
+    ) -> bool:
         """Analyze assignment expressions and update simple aliases."""
         if isinstance(statement, ast.Assign):
             self._scan(statement.value, derived)
-            is_derived = is_rhapi_derived(statement.value, derived)
+            provenance = get_rhapi_provenance(statement.value, derived)
             for target in statement.targets:
-                bind_target(target, derived, value_is_derived=is_derived)
+                bind_target(target, derived, provenance=provenance)
             return True
         if isinstance(statement, ast.AnnAssign):
             if statement.value is not None:
@@ -90,20 +155,25 @@ class RhapiProvenanceAnalyzer:
             bind_target(
                 statement.target,
                 derived,
-                value_is_derived=(
-                    statement.value is not None
-                    and is_rhapi_derived(statement.value, derived)
+                provenance=(
+                    get_rhapi_provenance(statement.value, derived)
+                    if statement.value is not None
+                    else None
                 ),
             )
             return True
         if isinstance(statement, ast.AugAssign):
             self._scan(statement.target, derived)
             self._scan(statement.value, derived)
-            bind_target(statement.target, derived, value_is_derived=False)
+            bind_target(statement.target, derived, provenance=None)
             return True
         return False
 
-    def _visit_control_flow(self, statement: ast.stmt, derived: set[str]) -> bool:
+    def _visit_control_flow(
+        self,
+        statement: ast.stmt,
+        derived: ProvenanceMap,
+    ) -> bool:
         """Analyze compound statements with conservative state merging."""
         if isinstance(statement, (ast.For, ast.AsyncFor)):
             self._visit_loop(statement, derived)
@@ -128,23 +198,24 @@ class RhapiProvenanceAnalyzer:
     def _visit_binding_or_expression(
         self,
         statement: ast.stmt,
-        derived: set[str],
+        derived: ProvenanceMap,
     ) -> None:
         """Handle imports, deletion, declarations, and simple expressions."""
         if isinstance(statement, (ast.Import, ast.ImportFrom)):
             self._invalidate_imports(statement, derived)
         elif isinstance(statement, ast.Delete):
             for target in statement.targets:
-                bind_target(target, derived, value_is_derived=False)
+                bind_target(target, derived, provenance=None)
         elif isinstance(statement, (ast.Global, ast.Nonlocal)):
-            derived.difference_update(statement.names)
+            for name in statement.names:
+                derived.pop(name, None)
         else:
             self._scan(statement, derived)
 
     def _visit_function(
         self,
         statement: ast.FunctionDef | ast.AsyncFunctionDef,
-        outer_derived: set[str],
+        outer_derived: ProvenanceMap,
     ) -> None:
         """Analyze defaults outside and a callback body in a fresh local scope."""
         for expression in (
@@ -159,118 +230,126 @@ class RhapiProvenanceAnalyzer:
             *statement.args.args,
             *statement.args.kwonlyargs,
         )
-        function_derived = {item.arg for item in parameters if item.arg == "rhapi"}
+        function_derived = {
+            item.arg: ROOT_RHAPI for item in parameters if item.arg == "rhapi"
+        }
         if statement.args.vararg is not None and statement.args.vararg.arg == "rhapi":
-            function_derived.add("rhapi")
+            function_derived["rhapi"] = ROOT_RHAPI
         if statement.args.kwarg is not None and statement.args.kwarg.arg == "rhapi":
-            function_derived.add("rhapi")
+            function_derived["rhapi"] = ROOT_RHAPI
         self._visit_block(statement.body, function_derived)
-        outer_derived.discard(statement.name)
+        outer_derived.pop(statement.name, None)
 
-    def _visit_class(self, statement: ast.ClassDef, derived: set[str]) -> None:
+    def _visit_class(self, statement: ast.ClassDef, derived: ProvenanceMap) -> None:
         """Analyze class expressions and methods without inheriting aliases."""
         for expression in (*statement.decorator_list, *statement.bases):
             self._scan(expression, derived)
         for keyword in statement.keywords:
             self._scan(keyword.value, derived)
-        self._visit_block(statement.body, set())
-        derived.discard(statement.name)
+        self._visit_block(statement.body, {})
+        derived.pop(statement.name, None)
 
-    def _visit_if(self, statement: ast.If, derived: set[str]) -> None:
+    def _visit_if(self, statement: ast.If, derived: ProvenanceMap) -> None:
         """Keep aliases after a conditional only when every path proves them."""
         self._scan(statement.test, derived)
-        body_derived = set(derived)
+        body_derived = dict(derived)
         self._visit_block(statement.body, body_derived)
-        else_derived = set(derived)
+        else_derived = dict(derived)
         self._visit_block(statement.orelse, else_derived)
         derived.clear()
-        derived.update(body_derived & else_derived)
+        derived.update(common_provenance(body_derived, else_derived))
 
     def _visit_loop(
         self,
         statement: ast.For | ast.AsyncFor,
-        derived: set[str],
+        derived: ProvenanceMap,
     ) -> None:
         """Analyze a loop while accounting for its possible zero iterations."""
         self._scan(statement.iter, derived)
-        body_derived = set(derived)
-        bind_target(statement.target, body_derived, value_is_derived=False)
+        body_derived = dict(derived)
+        bind_target(statement.target, body_derived, provenance=None)
         self._visit_block(statement.body, body_derived)
-        else_derived = set(derived)
+        else_derived = dict(derived)
         self._visit_block(statement.orelse, else_derived)
-        derived.intersection_update(body_derived, else_derived)
+        merged = common_provenance(derived, body_derived, else_derived)
+        derived.clear()
+        derived.update(merged)
 
-    def _visit_while(self, statement: ast.While, derived: set[str]) -> None:
+    def _visit_while(self, statement: ast.While, derived: ProvenanceMap) -> None:
         """Analyze a while loop without assuming that its body executes."""
         self._scan(statement.test, derived)
-        body_derived = set(derived)
+        body_derived = dict(derived)
         self._visit_block(statement.body, body_derived)
-        else_derived = set(derived)
+        else_derived = dict(derived)
         self._visit_block(statement.orelse, else_derived)
-        derived.intersection_update(body_derived, else_derived)
+        merged = common_provenance(derived, body_derived, else_derived)
+        derived.clear()
+        derived.update(merged)
 
     def _visit_with(
         self,
         statement: ast.With | ast.AsyncWith,
-        derived: set[str],
+        derived: ProvenanceMap,
     ) -> None:
         """Treat context-manager outputs as unrelated values."""
         for item in statement.items:
             self._scan(item.context_expr, derived)
             if item.optional_vars is not None:
-                bind_target(item.optional_vars, derived, value_is_derived=False)
+                bind_target(item.optional_vars, derived, provenance=None)
         self._visit_block(statement.body, derived)
 
     def _visit_try(
         self,
         statement: ast.Try | ast.TryStar,
-        derived: set[str],
+        derived: ProvenanceMap,
     ) -> None:
         """Retain only aliases proven by every completing try/except path."""
-        before = set(derived)
-        body_derived = set(before)
+        before = dict(derived)
+        body_derived = dict(before)
         self._visit_block(statement.body, body_derived)
         self._visit_block(statement.orelse, body_derived)
         paths = [body_derived]
         for handler in statement.handlers:
-            handler_derived = set(before)
+            handler_derived = dict(before)
             if handler.type is not None:
                 self._scan(handler.type, handler_derived)
             if handler.name is not None:
-                handler_derived.discard(handler.name)
+                handler_derived.pop(handler.name, None)
             self._visit_block(handler.body, handler_derived)
             paths.append(handler_derived)
-        merged = set.intersection(*paths)
+        merged = common_provenance(*paths)
         self._visit_block(statement.finalbody, merged)
         derived.clear()
         derived.update(merged)
 
-    def _visit_match(self, statement: ast.Match, derived: set[str]) -> None:
+    def _visit_match(self, statement: ast.Match, derived: ProvenanceMap) -> None:
         """Retain aliases that survive every match case and no-match path."""
         self._scan(statement.subject, derived)
-        paths = [set(derived)]
+        paths = [dict(derived)]
         for case in statement.cases:
-            case_derived = set(derived)
+            case_derived = dict(derived)
             invalidate_pattern(case.pattern, case_derived)
             if case.guard is not None:
                 self._scan(case.guard, case_derived)
             self._visit_block(case.body, case_derived)
             paths.append(case_derived)
-        derived.intersection_update(*paths)
+        merged = common_provenance(*paths)
+        derived.clear()
+        derived.update(merged)
 
-    def _scan(self, node: ast.AST, derived: set[str]) -> None:
+    def _scan(self, node: ast.AST, derived: ProvenanceMap) -> None:
         """Inspect expressions for private accesses without following calls."""
         _ExpressionScanner(derived, self._on_private_access).visit(node)
 
     @staticmethod
     def _invalidate_imports(
         statement: ast.Import | ast.ImportFrom,
-        derived: set[str],
+        derived: ProvenanceMap,
     ) -> None:
         """Treat imported bindings as unrelated values."""
         for item in statement.names:
             bound_name = item.asname or item.name.split(".", maxsplit=1)[0]
-            derived.discard(bound_name)
+            derived.pop(bound_name, None)
 
 
 class _ExpressionScanner(ast.NodeVisitor):
@@ -278,19 +357,17 @@ class _ExpressionScanner(ast.NodeVisitor):
 
     def __init__(
         self,
-        derived: set[str],
-        on_private_access: Callable[[ast.Attribute], None],
+        derived: ProvenanceMap,
+        on_private_access: PrivateAccessCallback,
     ) -> None:
         self._derived = derived
         self._on_private_access = on_private_access
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
         """Report only the named private member on an RHAPI-derived chain."""
-        if node.attr == "_racecontext" and is_rhapi_derived(
-            node.value,
-            self._derived,
-        ):
-            self._on_private_access(node)
+        provenance = get_rhapi_provenance(node.value, self._derived)
+        if node.attr == "_racecontext" and provenance is not None:
+            self._on_private_access(node, provenance)
         self.generic_visit(node)
 
     def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
@@ -299,7 +376,7 @@ class _ExpressionScanner(ast.NodeVisitor):
         bind_target(
             node.target,
             self._derived,
-            value_is_derived=is_rhapi_derived(node.value, self._derived),
+            provenance=get_rhapi_provenance(node.value, self._derived),
         )
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
@@ -327,11 +404,11 @@ class _ExpressionScanner(ast.NodeVisitor):
         *results: ast.expr,
     ) -> None:
         """Analyze generator inputs before applying their local bindings."""
-        local_derived = set(self._derived)
+        local_derived = dict(self._derived)
         local_scanner = _ExpressionScanner(local_derived, self._on_private_access)
         for generator in generators:
             local_scanner.visit(generator.iter)
-            bind_target(generator.target, local_derived, value_is_derived=False)
+            bind_target(generator.target, local_derived, provenance=None)
             for condition in generator.ifs:
                 local_scanner.visit(condition)
         for result in results:
