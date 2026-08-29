@@ -30,7 +30,10 @@ from rhfest.source import RhapiProvenance, RhapiProvenanceAnalyzer
 
 MANIFEST_SCHEMA = vol.Schema(
     {
-        "domain": vol.All(str, vol.Match(r"^[a-z0-9_-]+$")),
+        "domain": vol.All(
+            str,
+            vol.Match(r"^(?!.*__)(?!_)[a-z0-9_]+(?<!_)$"),
+        ),
         "name": str,
         "description": str,
         "required_rhapi_version": vol.Match(r"^\d+\.\d+$"),
