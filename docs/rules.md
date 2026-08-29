@@ -52,6 +52,10 @@ Validate all required and optional fields and formats with the manifest schema.
 One invalid manifest can produce multiple `MAN001` diagnostics. Extra fields are
 rejected.
 
+Plugin domains may contain lowercase letters, numbers, and internal single
+underscores. Hyphens, leading or trailing underscores, and consecutive
+underscores are rejected.
+
 The dormant `zip_release` custom validation is not enabled. `zip_release`
 therefore remains an extra manifest key under the active schema.
 
