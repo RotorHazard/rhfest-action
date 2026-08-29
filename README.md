@@ -1,6 +1,6 @@
 # RHFest Action
 
-A reusable GitHub Action that validates `manifest.json` files for RotorHazard plugins. It checks for missing fields, invalid formats, and unsupported values, and logs validation errors directly in GitHub Actions logs using **GitHub-friendly annotations**.
+A reusable GitHub Action that validates the repository structure and `manifest.json` files for RotorHazard plugins. Validation runs through a shared rule engine and reports stable rule codes in local output and **GitHub-friendly annotations**.
 
 ## 🛠️ Features
 
@@ -11,7 +11,7 @@ A reusable GitHub Action that validates `manifest.json` files for RotorHazard pl
   - 📄 Presence of `manifest.json` file
   - 🔁 Plugin domain folder matches the `domain` in `manifest.json`
 - 🚨 GitHub Action annotations for validation errors
-- ⚠️ Warnings for missing required fields
+- ⚠️ Warning diagnostics that do not fail validation
 - 🐳 Docker image for local testing (manual or pre-commit)
 - 📋 Validates for example:
   - **domain** format (e.g., lowercase letters, numbers, underscores)
@@ -81,8 +81,39 @@ uv run pre-commit install
 4. Run the application
 
 ```bash
-uv run python rhfest/core.py
+uv run python -m rhfest.core
 ```
+
+RHFest validates the current directory outside GitHub Actions and Docker. Set
+`GITHUB_WORKSPACE` to validate another path using the same discovery behavior as
+the action. A run exits with status `1` when it contains one or more error
+diagnostics; warnings alone exit with status `0`.
+
+### Run tests
+
+```bash
+uv run --group dev pytest
+```
+
+The test suite covers the rule engine, repository discovery, manifest schema,
+reporting, and exit status. CI runs it on all supported Python versions.
+
+## Rule engine
+
+Every finding is represented as data with a stable code, severity, message,
+family, and optional repository-relative path, one-based line, and one-based
+column. Rules return these diagnostics without writing logs themselves. The
+engine sorts registered rules by phase, order, and code, executes applicable
+rules, and passes the collected result to one reporter.
+
+The rule families are:
+
+- `STRxxx` — repository and plugin structure
+- `MANxxx` — `manifest.json` loading and validation
+- `RHxxx` — reserved for future RotorHazard-specific Python rules
+
+See the [rule catalog](docs/rules.md) for the stable code mapping, detailed rule
+behavior, diagnostic formats, and instructions for adding a rule.
 
 ### Run pre-commit checks
 

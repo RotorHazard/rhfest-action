@@ -31,4 +31,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT []
 
 # Run RHFest validation
-CMD ["python", "/app/rhfest/core.py"]
+CMD ["python", "-m", "rhfest.core"]
