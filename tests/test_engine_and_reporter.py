@@ -270,6 +270,33 @@ def test_full_reporter_renders_source_range_and_help(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("path_kind", ["parent", "absolute"])
+def test_full_reporter_does_not_read_outside_repository(
+    tmp_path: Path,
+    path_kind: str,
+) -> None:
+    """Source snippets are restricted to paths inside the repository."""
+    secret = tmp_path.parent / f"{tmp_path.name}-secret.txt"
+    secret.write_text("must not be rendered\n", encoding="utf-8")
+    diagnostic_path = (
+        f"../{secret.name}" if path_kind == "parent" else str(secret.resolve())
+    )
+    diagnostic = Diagnostic(
+        "MAN001",
+        Severity.ERROR,
+        "invalid",
+        RuleFamily.MANIFEST,
+        diagnostic_path,
+        1,
+        1,
+    )
+    reporter = Reporter(StringIO(), github_actions=False, color=False)
+
+    assert reporter.format_diagnostic(diagnostic, tmp_path) == (
+        f"error: MAN001 invalid\n --> {diagnostic_path}:1:1"
+    )
+
+
 def test_github_reporter_renders_ranges_help_and_escaping() -> None:
     """GitHub annotations match Ruff's metadata and workflow escaping."""
     diagnostic = Diagnostic(

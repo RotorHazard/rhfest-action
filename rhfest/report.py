@@ -153,9 +153,11 @@ class Reporter:
         if diagnostic.path is None or diagnostic.line is None or base_path is None:
             return None
         try:
-            source_lines = (
-                (base_path / diagnostic.path).read_text(encoding="utf-8").splitlines()
-            )
+            repository_path = base_path.resolve()
+            source_path = (repository_path / diagnostic.path).resolve()
+            if not source_path.is_relative_to(repository_path):
+                return None
+            source_lines = source_path.read_text(encoding="utf-8").splitlines()
         except (OSError, UnicodeError):
             return None
         if diagnostic.line > len(source_lines):
