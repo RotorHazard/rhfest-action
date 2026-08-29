@@ -543,6 +543,101 @@ class PrivateRhapiAccessRule(Rule):
         return "Replace `_racecontext` access with a documented public RHAPI operation."
 
 
+class InitializeEntryPointRule(Rule):
+    """RH002: validate the documented plugin initialize entry point."""
+
+    code = "RH002"
+    family = RuleFamily.ROTORHAZARD
+    phase = RulePhase.SOURCE
+    order = 20
+    requires = frozenset({Capability.PLUGIN_DIR, Capability.PYTHON_SOURCES})
+
+    def check(self, context: ValidationContext) -> list[Diagnostic]:
+        """Validate one unambiguous top-level ``initialize(rhapi)`` function."""
+        source = self._entry_point_source(context)
+        if source is None:
+            return []
+
+        definitions = [
+            node
+            for node in source.tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "initialize"
+        ]
+        if not definitions:
+            return [
+                self.diagnostic(
+                    "Expected a top-level `def initialize(rhapi)` entry point.",
+                    path=source.relative_path,
+                    help_text=self._help_text(),
+                )
+            ]
+        if len(definitions) != 1:
+            return [
+                self.diagnostic(
+                    "Expected exactly one top-level initialize definition; "
+                    f"found {len(definitions)}.",
+                    path=source.relative_path,
+                    help_text=self._help_text(),
+                    **locate_definition_name(source.source, definitions[0]),
+                )
+            ]
+
+        definition = definitions[0]
+        if self._has_supported_signature(definition):
+            return []
+        return [
+            self.diagnostic(
+                "Initialize entry point must use the supported "
+                "`def initialize(rhapi)` signature.",
+                path=source.relative_path,
+                help_text=self._help_text(),
+                **locate_definition_name(source.source, definition),
+            )
+        ]
+
+    @staticmethod
+    def _entry_point_source(context: ValidationContext) -> PythonSource | None:
+        """Return the cached top-level plugin source when it parsed successfully."""
+        if context.plugin_dir is None:
+            return None
+        relative_path = context.repository_path(context.plugin_dir / "__init__.py")
+        return next(
+            (
+                source
+                for source in context.python_sources or ()
+                if source.relative_path == relative_path
+            ),
+            None,
+        )
+
+    @staticmethod
+    def _has_supported_signature(
+        definition: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> bool:
+        """Return whether a definition exactly follows the supported contract."""
+        arguments = definition.args
+        positional = [*arguments.posonlyargs, *arguments.args]
+        return (
+            isinstance(definition, ast.FunctionDef)
+            and not definition.decorator_list
+            and len(positional) == 1
+            and positional[0].arg == "rhapi"
+            and not arguments.defaults
+            and not arguments.kwonlyargs
+            and arguments.vararg is None
+            and arguments.kwarg is None
+        )
+
+    @staticmethod
+    def _help_text() -> str:
+        """Return version-independent guidance for the plugin contract."""
+        return (
+            "Define one synchronous, undecorated top-level "
+            "`def initialize(rhapi)` following the RotorHazard plugin contract."
+        )
+
+
 def locate_manifest_key(
     context: ValidationContext,
     key: str,
@@ -585,6 +680,29 @@ def locate_attribute(source: str, node: ast.Attribute) -> dict[str, int]:
     }
 
 
+def locate_definition_name(
+    source: str,
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> dict[str, int]:
+    """Return the one-based range of a function definition name."""
+    source_line = source.splitlines()[node.lineno - 1]
+    encoded_line = source_line.encode("utf-8")
+    encoded_name = node.name.encode("utf-8")
+    start_offset = encoded_line.find(encoded_name, node.col_offset)
+    if start_offset < 0:
+        return {"line": node.lineno, "column": node.col_offset + 1}
+    column = len(encoded_line[:start_offset].decode("utf-8")) + 1
+    end_column = (
+        len(encoded_line[: start_offset + len(encoded_name)].decode("utf-8")) + 1
+    )
+    return {
+        "line": node.lineno,
+        "column": column,
+        "end_line": node.lineno,
+        "end_column": end_column,
+    }
+
+
 DEFAULT_RULES: tuple[Rule, ...] = (
     CustomPluginsRule(),
     SinglePluginRule(),
@@ -595,4 +713,5 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     ManifestDomainRule(),
     PythonSourceRule(),
     PrivateRhapiAccessRule(),
+    InitializeEntryPointRule(),
 )
