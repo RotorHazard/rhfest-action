@@ -4,34 +4,10 @@ import ast
 from collections.abc import Callable
 from dataclasses import dataclass
 
-PUBLIC_RHAPI_NAMESPACES = frozenset(
-    {
-        "classrank",
-        "config",
-        "db",
-        "eventresults",
-        "events",
-        "fields",
-        "filters",
-        "heatgen",
-        "interface",
-        "io",
-        "language",
-        "led",
-        "points",
-        "race",
-        "sensors",
-        "server",
-        "ui",
-        "utils",
-        "vrxcontrol",
-    }
-)
-
 
 @dataclass(frozen=True, slots=True)
 class RhapiProvenance:
-    """Known public RHAPI namespace for one derived expression, if any."""
+    """First non-private attribute traversed from RHAPI, if known."""
 
     namespace: str | None = None
 
@@ -53,7 +29,7 @@ def get_rhapi_provenance(
         if (
             provenance is not None
             and provenance.namespace is None
-            and node.attr in PUBLIC_RHAPI_NAMESPACES
+            and not node.attr.startswith("_")
         ):
             return RhapiProvenance(node.attr)
         return provenance

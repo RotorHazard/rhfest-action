@@ -15,6 +15,15 @@ PRIVATE_MESSAGE = (
     "Private RHAPI member '_racecontext' accessed. Plugins must use the public "
     "RHAPI interface."
 )
+GENERIC_HELP = "Replace `_racecontext` access with a documented public RHAPI operation."
+
+
+def origin_help(namespace: str) -> str:
+    """Return the expected version-independent namespace guidance."""
+    return (
+        f"This value originates from `rhapi.{namespace}`; replace `_racecontext` "
+        "access with a documented public RHAPI operation."
+    )
 
 
 def write_plugin_source(repository: Path, relative_path: str, source: str) -> Path:
@@ -38,23 +47,14 @@ def source_diagnostics(repository: Path) -> tuple[Diagnostic, ...]:
     [
         (
             "rhapi._racecontext",
-            "Use a supported public RHAPI namespace such as `rhapi.db`, "
-            "`rhapi.race`, or `rhapi.events`.",
+            GENERIC_HELP,
         ),
+        ("rhapi.db._racecontext", origin_help("db")),
+        ("rhapi.race._racecontext", origin_help("race")),
+        ("rhapi.events._racecontext", origin_help("events")),
         (
-            "rhapi.db._racecontext",
-            "Use a documented member of the public `rhapi.db` API instead of "
-            "`_racecontext`.",
-        ),
-        (
-            "rhapi.race._racecontext",
-            "Use a documented member of the public `rhapi.race` API instead of "
-            "`_racecontext`.",
-        ),
-        (
-            "rhapi.events._racecontext",
-            "Use a documented member of the public `rhapi.events` API instead "
-            "of `_racecontext`.",
+            "rhapi.future_namespace._racecontext",
+            origin_help("future_namespace"),
         ),
     ],
 )
@@ -91,13 +91,11 @@ def test_rh001_detects_direct_and_namespace_access(
     [
         (
             "api = rhapi\n    value = api._racecontext",
-            "Use a supported public RHAPI namespace such as `rhapi.db`, "
-            "`rhapi.race`, or `rhapi.events`.",
+            GENERIC_HELP,
         ),
         (
             "database = rhapi.db\n    value = database._racecontext",
-            "Use a documented member of the public `rhapi.db` API instead of "
-            "`_racecontext`.",
+            origin_help("db"),
         ),
     ],
 )
@@ -259,10 +257,7 @@ def test_rh001_uses_generic_help_for_ambiguous_branch_namespace(
     diagnostics = source_diagnostics(repository)
 
     assert len(diagnostics) == 1
-    assert diagnostics[0].help == (
-        "Use a supported public RHAPI namespace such as `rhapi.db`, "
-        "`rhapi.race`, or `rhapi.events`."
-    )
+    assert diagnostics[0].help == GENERIC_HELP
 
 
 def test_rh001_does_not_follow_calls_or_containers(

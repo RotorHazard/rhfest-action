@@ -401,13 +401,11 @@ class PrivateRhapiAccessRule(Rule):
         """Suggest a public API only when namespace provenance is certain."""
         if provenance.namespace is not None:
             return (
-                "Use a documented member of the public "
-                f"`rhapi.{provenance.namespace}` API instead of `_racecontext`."
+                f"This value originates from `rhapi.{provenance.namespace}`; "
+                "replace `_racecontext` access with a documented public RHAPI "
+                "operation."
             )
-        return (
-            "Use a supported public RHAPI namespace such as `rhapi.db`, "
-            "`rhapi.race`, or `rhapi.events`."
-        )
+        return "Replace `_racecontext` access with a documented public RHAPI operation."
 
 
 def locate_manifest_key(
