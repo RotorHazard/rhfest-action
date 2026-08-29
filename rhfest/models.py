@@ -36,9 +36,18 @@ class Capability(StrEnum):
     PLUGIN_PATH = "plugin_path"
     PLUGIN_DIR = "plugin_dir"
     MANIFEST_PATH = "manifest_path"
+    MANIFEST_DOCUMENT = "manifest_document"
     MANIFEST_DATA = "manifest_data"
     MANIFEST_SOURCE = "manifest_source"
     PYTHON_SOURCES = "python_sources"
+
+
+@dataclass(frozen=True, slots=True)
+class ManifestDocument:
+    """A manifest read and parsed once for all manifest rules."""
+
+    source: str
+    data: Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,9 +102,16 @@ class ValidationContext:
     plugin_path: Path | None = None
     plugin_dir: Path | None = None
     manifest_path: Path | None = None
-    manifest_data: Any | None = None
     manifest_source: str | None = None
+    manifest_document: ManifestDocument | None = None
     python_sources: tuple[PythonSource, ...] | None = None
+
+    @property
+    def manifest_data(self) -> Any | None:
+        """Expose parsed manifest data for compatibility with context consumers."""
+        if self.manifest_document is None:
+            return None
+        return self.manifest_document.data
 
     def repository_path(self, path: Path) -> str:
         """Return a repository-relative POSIX path for a diagnostic."""
@@ -103,7 +119,24 @@ class ValidationContext:
 
     def has(self, capability: Capability) -> bool:
         """Return whether a typed capability is available to a rule."""
+        if capability is Capability.MANIFEST_DATA:
+            return self.manifest_document is not None
         return getattr(self, capability.value) is not None
+
+    def source_for(self, path: str | None) -> str | None:
+        """Return source already loaded for a repository-relative path."""
+        if path is None:
+            return None
+        if (
+            self.manifest_path is not None
+            and self.manifest_source is not None
+            and self.repository_path(self.manifest_path) == path
+        ):
+            return self.manifest_source
+        for source in self.python_sources or ():
+            if source.relative_path == path:
+                return source.source
+        return None
 
 
 @dataclass(frozen=True, slots=True)

@@ -70,6 +70,7 @@ def test_successful_structure_discovers_context(
         "STR001",
         "STR002",
         "STR003",
+        "MAN000",
         "MAN001",
         "MAN002",
         "RH000",

@@ -18,6 +18,7 @@ from rhfest.const import (
 from rhfest.models import (
     Capability,
     Diagnostic,
+    ManifestDocument,
     PythonSource,
     RuleFamily,
     RulePhase,
@@ -176,25 +177,77 @@ class ManifestExistsRule(Rule):
         return []
 
 
+class ManifestParsingRule(Rule):
+    """MAN000: read and parse manifest.json once for all manifest rules."""
+
+    code = "MAN000"
+    family = RuleFamily.MANIFEST
+    phase = RulePhase.MANIFEST
+    order = 0
+    requires = frozenset({Capability.MANIFEST_PATH})
+
+    def check(self, context: ValidationContext) -> list[Diagnostic]:
+        """Populate reusable manifest context or return a parsing diagnostic."""
+        if context.manifest_path is None:
+            return []
+
+        relative_path = context.repository_path(context.manifest_path)
+        repository_root = context.base_path.resolve()
+        try:
+            manifest_path = context.manifest_path.resolve()
+            if not manifest_path.is_relative_to(repository_root):
+                return [
+                    self.diagnostic(
+                        "Manifest file resolves outside the repository.",
+                        path=relative_path,
+                        help_text="Keep manifest.json within the repository.",
+                    )
+                ]
+            context.manifest_source = manifest_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            return [
+                self.diagnostic(
+                    f"Unable to read manifest JSON: {error}.",
+                    path=relative_path,
+                    help_text="Ensure manifest.json is readable UTF-8 JSON.",
+                )
+            ]
+
+        try:
+            data = json.loads(context.manifest_source)
+        except json.JSONDecodeError as error:
+            return [
+                self.diagnostic(
+                    f"Unable to parse manifest JSON: {error.msg}.",
+                    path=relative_path,
+                    line=error.lineno,
+                    column=error.colno,
+                    end_line=error.lineno,
+                    end_column=error.colno + 1,
+                    help_text="Fix the JSON syntax in manifest.json.",
+                )
+            ]
+
+        context.manifest_document = ManifestDocument(context.manifest_source, data)
+        return []
+
+
 class ManifestSchemaRule(Rule):
-    """MAN001: load manifest.json and validate its complete schema."""
+    """MAN001: validate the parsed manifest against its complete schema."""
 
     code = "MAN001"
     family = RuleFamily.MANIFEST
     phase = RulePhase.MANIFEST
     order = 10
-    requires = frozenset({Capability.MANIFEST_PATH})
+    requires = frozenset({Capability.MANIFEST_DOCUMENT})
 
     def check(self, context: ValidationContext) -> list[Diagnostic]:
         """Return one diagnostic for every Voluptuous schema finding."""
-        if context.manifest_path is None:
+        if context.manifest_document is None:
             return []
 
-        context.manifest_source = context.manifest_path.read_text(encoding="utf-8")
-        context.manifest_data = json.loads(context.manifest_source)
-
         try:
-            MANIFEST_SCHEMA(context.manifest_data)
+            MANIFEST_SCHEMA(context.manifest_document.data)
         except vol.MultipleInvalid as err:
             errors = sorted(err.errors, key=lambda item: tuple(map(str, item.path)))
             return [self._schema_diagnostic(context, item) for item in errors]
@@ -239,14 +292,16 @@ class ManifestDomainRule(Rule):
     family = RuleFamily.MANIFEST
     phase = RulePhase.MANIFEST
     order = 20
-    requires = frozenset({Capability.MANIFEST_PATH, Capability.MANIFEST_DATA})
+    requires = frozenset({Capability.MANIFEST_PATH, Capability.MANIFEST_DOCUMENT})
 
     def check(self, context: ValidationContext) -> list[Diagnostic]:
         """Compare a string domain with the discovered plugin folder name."""
-        if context.manifest_path is None or not isinstance(context.manifest_data, dict):
+        if context.manifest_path is None or context.manifest_document is None:
+            return []
+        if not isinstance(context.manifest_document.data, dict):
             return []
 
-        manifest_domain = context.manifest_data.get("domain")
+        manifest_domain = context.manifest_document.data.get("domain")
         if not isinstance(manifest_domain, str):
             return []
         folder_domain = context.manifest_path.parent.name
@@ -454,6 +509,7 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     CustomPluginsRule(),
     SinglePluginRule(),
     ManifestExistsRule(),
+    ManifestParsingRule(),
     ManifestSchemaRule(),
     ManifestDomainRule(),
     PythonSourceRule(),

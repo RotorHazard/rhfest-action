@@ -25,6 +25,19 @@ Require `manifest.json` below the discovered plugin entry.
 
 ## Manifest rules
 
+### MAN000 — Manifest parsing
+
+Read `manifest.json` once as UTF-8 and parse it once as JSON. The source and
+parsed value are retained together in `ValidationContext` for all later manifest
+rules. File access, Unicode decoding, repository-boundary, and JSON syntax
+failures are emitted as `MAN000` errors through the shared reporter instead of
+raising an unhandled exception.
+
+JSON syntax diagnostics include a repository-relative path and one-based source
+location. `MAN001` and later manifest rules run only when MAN000 produced a
+parsed manifest document. A valid JSON `null` value is therefore distinguishable
+from a parsing failure and still reaches schema validation.
+
 ### MAN001 — Manifest schema
 
 Validate all required and optional fields and formats with the manifest schema.
@@ -140,9 +153,9 @@ Python source rules must consume the parsed `PythonSource` values exposed throug
 second time. Keep provenance helpers in `rhfest/source.py` reusable when a
 future rule needs the same conservative symbol knowledge.
 
-Structure errors prevent the manifest phase from running. Invalid JSON and
-file-read errors retain their existing exception behavior; the rule-engine
-migration does not define a new recovery policy for them.
+Structure errors prevent the manifest phase from running. MAN000 converts
+manifest loading and JSON parsing failures to diagnostics; later manifest rules
+require its successfully prepared document.
 
 ## Engine contract
 
