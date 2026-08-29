@@ -8,6 +8,7 @@ from rhfest.models import RuleFamily, ValidationResult
 
 RULE_CODE_PATTERN = re.compile(r"[A-Z]+\d{3}")
 FAMILY_SELECTORS = frozenset(family.value for family in RuleFamily)
+FAMILY_SELECTOR_EXAMPLES = ", ".join(sorted(FAMILY_SELECTORS))
 
 
 class RuleSelectionError(ValueError):
@@ -118,7 +119,8 @@ class RuleSelection:
             message = f"Unknown rule selector: {selector!r}."
             raise RuleSelectionError(message)
         message = (
-            f"Malformed rule selector: {selector!r}; expected STR, MAN, RH, "
+            f"Malformed rule selector: {selector!r}; expected "
+            f"{FAMILY_SELECTOR_EXAMPLES}, "
             "or an exact code such as RH002."
         )
         raise RuleSelectionError(message)

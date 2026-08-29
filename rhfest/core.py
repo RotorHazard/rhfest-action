@@ -40,7 +40,7 @@ def run_rhfest(
     if selection.active:
         active_reporter.report_configuration(selection.summary)
     context = ValidationContext(Path(base_path).resolve())
-    result = engine.run(context, active_reporter, selection)
+    result = engine.run(context, active_reporter, selection=selection)
     return result.exit_code
 
 

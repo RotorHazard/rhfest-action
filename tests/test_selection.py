@@ -74,6 +74,15 @@ def test_malformed_selectors_fail_clearly(selector: str) -> None:
         RuleSelection.from_selectors(REGISTERED_CODES, ignore=selector)
 
 
+def test_malformed_selector_guidance_uses_registered_families() -> None:
+    """Configuration guidance cannot drift from the RuleFamily enum."""
+    with pytest.raises(RuleSelectionError) as error:
+        RuleSelection.from_selectors(REGISTERED_CODES, select="RH0")
+
+    expected_families = ", ".join(sorted(family.value for family in RuleFamily))
+    assert f"expected {expected_families}, or an exact code" in str(error.value)
+
+
 def test_selection_filters_diagnostics_but_not_prerequisite_execution(
     repository_factory: Callable[[dict[str, Any], str], Path],
     valid_manifest: dict[str, Any],

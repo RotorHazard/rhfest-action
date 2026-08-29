@@ -14,4 +14,4 @@ inputs:
     default: ""
 runs:
   using: "docker"
-  image: "ghcr.io/rotorhazard/rhfest-action:v3.1.0"
+  image: "ghcr.io/rotorhazard/rhfest-action:v3"
