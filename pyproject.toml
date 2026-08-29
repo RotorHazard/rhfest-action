@@ -30,6 +30,7 @@ lint.ignore = [
   "ARG001",  # Unused function arguments
   "ANN401",  # Opinionated warning on disallowing dynamically typed expressions
 
+  "CPY001",  # Copyright notices are maintained in the project license
   "D203",    # Conflicts with other rules
   "D213",    # Conflicts with other rules
   "D417",    # False positives in some occasions
