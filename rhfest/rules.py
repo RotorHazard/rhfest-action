@@ -278,9 +278,20 @@ class PythonSourceRule(Rule):
         if context.plugin_dir is None:
             return []
 
-        plugin_root = context.plugin_dir.resolve()
         diagnostics: list[Diagnostic] = []
         sources: list[PythonSource] = []
+        repository_root = context.base_path.resolve()
+        plugin_root = context.plugin_dir.resolve()
+        if not plugin_root.is_relative_to(repository_root):
+            context.python_sources = ()
+            return [
+                self.diagnostic(
+                    "Plugin source directory resolves outside the repository.",
+                    path=context.repository_path(context.plugin_dir),
+                    help_text="Keep plugin source files within the repository.",
+                )
+            ]
+
         candidates = sorted(
             context.plugin_dir.rglob("*.py"),
             key=context.repository_path,

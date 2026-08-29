@@ -1,6 +1,7 @@
 """Tests for reusable Python parsing and RotorHazard-specific rules."""
 
 import ast
+import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -241,6 +242,41 @@ def test_source_files_outside_plugin_directory_are_ignored(
     )
 
     assert source_diagnostics(repository) == ()
+
+
+def test_plugin_symlink_outside_repository_is_rejected(
+    tmp_path: Path,
+    valid_manifest: dict[str, Any],
+) -> None:
+    """Source discovery never follows the plugin root outside the checkout."""
+    repository = tmp_path / "repository"
+    plugin_parent = repository / "custom_plugins"
+    plugin_parent.mkdir(parents=True)
+    external_plugin = tmp_path / "external" / "example"
+    external_plugin.mkdir(parents=True)
+    (external_plugin / "manifest.json").write_text(
+        json.dumps(valid_manifest),
+        encoding="utf-8",
+    )
+    (external_plugin / "private.py").write_text(
+        "def initialize(rhapi):\n    return rhapi._racecontext\n",
+        encoding="utf-8",
+    )
+    (plugin_parent / "example").symlink_to(external_plugin, target_is_directory=True)
+    context = ValidationContext(repository)
+
+    result = ValidationEngine().run(context)
+    diagnostics = tuple(
+        item for item in result.diagnostics if item.family is RuleFamily.ROTORHAZARD
+    )
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0].code == "RH000"
+    assert diagnostics[0].path == "custom_plugins/example"
+    assert diagnostics[0].message == (
+        "Plugin source directory resolves outside the repository."
+    )
+    assert context.python_sources == ()
 
 
 def test_rh000_reports_syntax_errors_without_blocking_other_files(
