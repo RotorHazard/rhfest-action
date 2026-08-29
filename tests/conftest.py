@@ -29,7 +29,10 @@ def repository_factory(
     def create(manifest: dict[str, Any], domain: str = "example") -> Path:
         plugin_dir = tmp_path / "custom_plugins" / domain
         plugin_dir.mkdir(parents=True)
-        (plugin_dir / "__init__.py").touch()
+        (plugin_dir / "__init__.py").write_text(
+            "def initialize(rhapi):\n    pass\n",
+            encoding="utf-8",
+        )
         (plugin_dir / "manifest.json").write_text(
             json.dumps(manifest),
             encoding="utf-8",

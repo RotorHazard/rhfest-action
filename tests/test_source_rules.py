@@ -17,6 +17,10 @@ PRIVATE_MESSAGE = (
     "RHAPI interface."
 )
 GENERIC_HELP = "Replace `_racecontext` access with a documented public RHAPI operation."
+INITIALIZE_HELP = (
+    "Define one synchronous, undecorated top-level `def initialize(rhapi)` "
+    "following the RotorHazard plugin contract."
+)
 
 
 def origin_help(namespace: str) -> str:
@@ -343,7 +347,10 @@ def test_rh000_reads_the_resolved_source_path(
     repository = tmp_path / "repository"
     plugin_dir = repository / "custom_plugins" / "example"
     plugin_dir.mkdir(parents=True)
-    (plugin_dir / "__init__.py").touch()
+    (plugin_dir / "__init__.py").write_text(
+        "def initialize(rhapi):\n    pass\n",
+        encoding="utf-8",
+    )
     (plugin_dir / "manifest.json").write_text(
         json.dumps(valid_manifest),
         encoding="utf-8",
@@ -398,7 +405,7 @@ def test_python_files_are_parsed_once_for_all_source_rules(
     repository_factory: Callable[[dict[str, Any], str], Path],
     valid_manifest: dict[str, Any],
 ) -> None:
-    """The source context is reusable without reparsing in RH001."""
+    """The source context is reusable by every RH rule without reparsing."""
     repository = repository_factory(valid_manifest)
     write_plugin_source(repository, "a.py", "VALUE = 1\n")
     write_plugin_source(repository, "nested/b.py", "VALUE = 2\n")
@@ -421,3 +428,154 @@ def test_python_files_are_parsed_once_for_all_source_rules(
     ]
     assert context.python_sources is not None
     assert [item.relative_path for item in context.python_sources] == parse_calls
+
+
+def test_rh002_reports_missing_top_level_initialize(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+) -> None:
+    """Names in other files do not satisfy the __init__.py entry point."""
+    repository = repository_factory(valid_manifest)
+    write_plugin_source(repository, "__init__.py", "VALUE = 1\n")
+    write_plugin_source(repository, "other.py", "def initialize(rhapi):\n    pass\n")
+
+    diagnostics = source_diagnostics(repository)
+
+    assert diagnostics == (
+        Diagnostic(
+            "RH002",
+            Severity.ERROR,
+            "Expected a top-level `def initialize(rhapi)` entry point.",
+            RuleFamily.ROTORHAZARD,
+            "custom_plugins/example/__init__.py",
+            help=INITIALIZE_HELP,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "definition",
+    [
+        "def initialize(rhapi):\n    pass\n",
+        "def initialize(rhapi: object) -> None:\n    pass\n",
+        "def initialize(rhapi, /):\n    pass\n",
+    ],
+)
+def test_rh002_accepts_supported_initialize_definitions(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+    definition: str,
+) -> None:
+    """A single positional RHAPI parameter and annotations are supported."""
+    repository = repository_factory(valid_manifest)
+    write_plugin_source(repository, "__init__.py", definition)
+
+    assert source_diagnostics(repository) == ()
+
+
+@pytest.mark.parametrize(
+    "definition",
+    [
+        "def initialize():\n    pass\n",
+        "def initialize(api):\n    pass\n",
+        "def initialize(rhapi, extra):\n    pass\n",
+        "def initialize(rhapi=None):\n    pass\n",
+        "def initialize(*args):\n    pass\n",
+        "def initialize(**kwargs):\n    pass\n",
+        "def initialize(*, rhapi):\n    pass\n",
+        "async def initialize(rhapi):\n    pass\n",
+        "@decorator\ndef initialize(rhapi):\n    pass\n",
+    ],
+)
+def test_rh002_rejects_ambiguous_initialize_signatures(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+    definition: str,
+) -> None:
+    """Defaults, alternate names, async, decorators, and variadics are rejected."""
+    repository = repository_factory(valid_manifest)
+    write_plugin_source(repository, "__init__.py", definition)
+
+    diagnostics = source_diagnostics(repository)
+
+    assert [item.code for item in diagnostics] == ["RH002"]
+    assert diagnostics[0].message == (
+        "Initialize entry point must use the supported "
+        "`def initialize(rhapi)` signature."
+    )
+    expected_line = 2 if definition.startswith("@") else 1
+    expected_column = 11 if definition.startswith("async ") else 5
+    assert (
+        diagnostics[0].line,
+        diagnostics[0].column,
+        diagnostics[0].end_line,
+        diagnostics[0].end_column,
+    ) == (expected_line, expected_column, expected_line, expected_column + 10)
+    assert diagnostics[0].help == INITIALIZE_HELP
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "def outer():\n    def initialize(rhapi):\n        pass\n",
+        "class Plugin:\n    def initialize(self, rhapi):\n        pass\n",
+    ],
+)
+def test_rh002_ignores_nested_and_class_initialize_definitions(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+    source: str,
+) -> None:
+    """Only a direct module child can provide the plugin entry point."""
+    repository = repository_factory(valid_manifest)
+    write_plugin_source(repository, "__init__.py", source)
+
+    diagnostics = source_diagnostics(repository)
+
+    assert [item.code for item in diagnostics] == ["RH002"]
+    assert diagnostics[0].line is None
+
+
+def test_rh002_ignores_non_definition_initialize_names(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+) -> None:
+    """Imports, assignments, comments, strings, and lambdas are not definitions."""
+    repository = repository_factory(valid_manifest)
+    write_plugin_source(
+        repository,
+        "__init__.py",
+        "# def initialize(rhapi): pass\n"
+        "TEXT = 'def initialize(rhapi)'\n"
+        "from helpers import initialize\n"
+        "initialize = lambda rhapi: None\n",
+    )
+
+    diagnostics = source_diagnostics(repository)
+
+    assert [item.code for item in diagnostics] == ["RH002"]
+
+
+def test_rh002_rejects_multiple_overload_style_definitions(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+) -> None:
+    """Multiple definitions are ambiguous even when one is an implementation."""
+    repository = repository_factory(valid_manifest)
+    write_plugin_source(
+        repository,
+        "__init__.py",
+        "from typing import overload\n"
+        "@overload\n"
+        "def initialize(rhapi: object) -> None: ...\n"
+        "def initialize(rhapi):\n"
+        "    pass\n",
+    )
+
+    diagnostics = source_diagnostics(repository)
+
+    assert [item.code for item in diagnostics] == ["RH002"]
+    assert diagnostics[0].message == (
+        "Expected exactly one top-level initialize definition; found 2."
+    )
+    assert (diagnostics[0].line, diagnostics[0].column) == (3, 5)

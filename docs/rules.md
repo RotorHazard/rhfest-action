@@ -117,6 +117,22 @@ they expose `_racecontext`, and it does not prohibit other underscore-prefixed
 attributes. Comments and string literals are naturally ignored by the AST
 analysis.
 
+### RH002 — Initialize entry point
+
+Require `__init__.py` to contain exactly one synchronous, undecorated top-level
+`def initialize(rhapi)`. The single `rhapi` parameter may be positional-only or
+regular positional and may carry a type annotation. Return annotations are also
+accepted. Defaults, keyword-only parameters, extra parameters, `*args`,
+`**kwargs`, decorators, and `async def` are rejected because they do not express
+the documented contract unambiguously. Multiple top-level definitions,
+including overload-style declarations, are rejected as ambiguous.
+
+Nested functions, class methods, imported names, assignments, lambdas, comments,
+and strings named `initialize` do not satisfy the entry-point contract. RH002
+uses the AST and source text cached by RH000 and never reparses `__init__.py`.
+Guidance refers to RotorHazard's stable `initialize(rhapi)` plugin contract and
+does not embed a version-specific list of RHAPI methods.
+
 ## Diagnostic output
 
 Every diagnostic contains a stable code, severity, message, family, and optional
