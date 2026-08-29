@@ -167,6 +167,37 @@ def test_man000_rejects_manifest_symlink_outside_repository(
     assert result.diagnostics[0].path == "custom_plugins/example/manifest.json"
 
 
+def test_man000_reads_the_resolved_manifest_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    valid_manifest: dict[str, Any],
+) -> None:
+    """A symlink cannot redirect the read after its target passed validation."""
+    repository = tmp_path / "repository"
+    plugin_dir = repository / "custom_plugins" / "example"
+    plugin_dir.mkdir(parents=True)
+    manifest_target = plugin_dir / "manifest-target.json"
+    manifest_target.write_text(json.dumps(valid_manifest), encoding="utf-8")
+    manifest_path = plugin_dir / "manifest.json"
+    manifest_path.symlink_to(manifest_target)
+    external_manifest = tmp_path / "external-manifest.json"
+    external_manifest.write_text("not json", encoding="utf-8")
+    original_read_text = Path.read_text
+
+    def redirecting_read_text(path: Path, *args: object, **kwargs: object) -> str:
+        if path == manifest_path:
+            path.unlink()
+            path.symlink_to(external_manifest)
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", redirecting_read_text)
+
+    result = validate(repository)
+
+    assert result.diagnostics == ()
+    assert manifest_path.resolve() == manifest_target
+
+
 def test_man000_reports_file_read_errors(
     monkeypatch: pytest.MonkeyPatch,
     repository_factory: Callable[[dict[str, Any], str], Path],

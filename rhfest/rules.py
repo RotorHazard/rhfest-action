@@ -203,7 +203,7 @@ class ManifestParsingRule(Rule):
                         help_text="Keep manifest.json within the repository.",
                     )
                 ]
-            context.manifest_source = context.manifest_path.read_text(encoding="utf-8")
+            context.manifest_source = manifest_path.read_text(encoding="utf-8")
         except (OSError, UnicodeError) as error:
             return [
                 self.diagnostic(
