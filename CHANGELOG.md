@@ -2,6 +2,12 @@
 
 This changelog highlights user-facing changes in RHFest. The complete list of merged pull requests remains available in the corresponding GitHub release.
 
+## [Unreleased]
+
+### Added
+
+- Stable releases now publish moving major and minor Git tags, such as `v3` and `v3.2`, for users who prefer automatic compatible Action updates.
+
 ## [3.2.2] - 2026-08-29
 
 ### Fixed

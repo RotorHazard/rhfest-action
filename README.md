@@ -42,15 +42,23 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Run RHFest validation
-        uses: RotorHazard/rhfest-action@v3
+        uses: RotorHazard/rhfest-action@v3.2.2
 ```
+
+Pinning a complete release tag keeps validation reproducible. Moving tags are
+also available for users who prefer automatic compatible updates:
+
+- `RotorHazard/rhfest-action@v3.2` follows patch releases within v3.2.
+- `RotorHazard/rhfest-action@v3` follows minor and patch releases within v3.
+
+Moving tags trade strict reproducibility for automatic updates.
 
 To adopt rule families incrementally or suppress a deliberate exception, pass
 the corresponding Action inputs:
 
 ```yaml
       - name: Run selected RHFest validation
-        uses: RotorHazard/rhfest-action@v3
+        uses: RotorHazard/rhfest-action@v3.2.2
         with:
           select: "STR,MAN,RH002"
           ignore: "MAN002"
@@ -64,7 +72,7 @@ hook to an exact release for reproducible checks:
 ```yaml
 repos:
   - repo: https://github.com/RotorHazard/rhfest-action
-    rev: v3.2.0
+    rev: v3.2.2
     hooks:
       - id: rhfest
 ```
@@ -76,14 +84,17 @@ _Needs Docker installed_
 RHFest is available as a [Docker image](https://github.com/RotorHazard/rhfest-action/pkgs/container/rhfest-action), which makes it easy to test locally without installing any dependencies. To test your RotorHazard plugin repository, you can use the following command:
 
 ```bash
-docker run --rm -v "$(pwd)":/repo ghcr.io/rotorhazard/rhfest-action:latest
+docker run --rm -v "$(pwd)":/repo ghcr.io/rotorhazard/rhfest-action:v3.2.2
 ```
+
+The moving `v3.2` and `v3` container tags are also available for users who
+prefer automatic compatible updates.
 
 Rule selection flags can be passed directly to the container:
 
 ```bash
 docker run --rm -v "$(pwd)":/repo \
-  ghcr.io/rotorhazard/rhfest-action:latest \
+  ghcr.io/rotorhazard/rhfest-action:v3.2.2 \
   --select STR,MAN,RH002 --ignore MAN002
 ```
 
