@@ -4,6 +4,12 @@ This changelog highlights user-facing changes in RHFest. The complete list of me
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-08-29
+
+### Fixed
+
+- Dockerfile-based GitHub Actions now report the selected Action version instead of `dev`.
+
 ## [3.2.0] - 2026-08-29
 
 ### Added
@@ -156,7 +162,8 @@ This changelog highlights user-facing changes in RHFest. The complete list of me
 - Initial release of the RHFest GitHub Action with plugin repository structure and manifest validation.
 - Added validation logging and GitHub Actions integration.
 
-[Unreleased]: https://github.com/RotorHazard/rhfest-action/compare/v3.2.0...develop
+[Unreleased]: https://github.com/RotorHazard/rhfest-action/compare/v3.2.1...develop
+[3.2.1]: https://github.com/RotorHazard/rhfest-action/compare/v3.2.0...v3.2.1
 [3.2.0]: https://github.com/RotorHazard/rhfest-action/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/RotorHazard/rhfest-action/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/RotorHazard/rhfest-action/compare/v3.0.0...v3.0.1
