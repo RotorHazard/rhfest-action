@@ -4,6 +4,7 @@ import ast
 import json
 import re
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import ClassVar
 
 import voluptuous as vol
@@ -146,8 +147,84 @@ class SinglePluginRule(Rule):
                     path=PLUGIN_DIR,
                 )
             ]
-        context.plugin_dir = plugin_entries[0]
+        context.plugin_entry = plugin_entries[0]
         return []
+
+
+class PluginEntryPointRule(Rule):
+    """STR004: require a plugin directory with a loadable entry point."""
+
+    code = "STR004"
+    family = RuleFamily.STRUCTURE
+    phase = RulePhase.STRUCTURE
+    order = 30
+    requires = frozenset({Capability.PLUGIN_ENTRY})
+
+    def check(self, context: ValidationContext) -> list[Diagnostic]:
+        """Validate the discovered plugin entry before exposing its directory."""
+        if context.plugin_entry is None:
+            return []
+
+        plugin_entry = context.plugin_entry
+        relative_entry = context.repository_path(plugin_entry)
+        try:
+            finding = self._validate_entry(context, plugin_entry)
+        except OSError as error:
+            return [
+                self.diagnostic(
+                    f"Unable to inspect the plugin entry: {error}.",
+                    path=relative_entry,
+                    help_text=(
+                        "Ensure the plugin entry is accessible within the repository."
+                    ),
+                )
+            ]
+        if finding is not None:
+            return [finding]
+
+        context.plugin_dir = plugin_entry
+        return []
+
+    def _validate_entry(
+        self,
+        context: ValidationContext,
+        plugin_entry: Path,
+    ) -> Diagnostic | None:
+        """Return a finding when the directory or entry point is invalid."""
+        repository_root = context.base_path.resolve()
+        relative_entry = context.repository_path(plugin_entry)
+        resolved_entry = plugin_entry.resolve()
+        if not resolved_entry.is_relative_to(repository_root):
+            return self.diagnostic(
+                "Plugin entry resolves outside the repository.",
+                path=relative_entry,
+                help_text="Keep the plugin directory within the repository.",
+            )
+        if not resolved_entry.is_dir():
+            return self.diagnostic(
+                "Expected the plugin entry to be a directory.",
+                path=relative_entry,
+                help_text=(
+                    "Replace the entry with a directory containing __init__.py."
+                ),
+            )
+
+        entry_point = plugin_entry / "__init__.py"
+        relative_entry_point = context.repository_path(entry_point)
+        resolved_entry_point = entry_point.resolve()
+        if not resolved_entry_point.is_relative_to(repository_root):
+            return self.diagnostic(
+                "Plugin entry point resolves outside the repository.",
+                path=relative_entry_point,
+                help_text="Keep __init__.py within the repository.",
+            )
+        if not resolved_entry_point.is_file():
+            return self.diagnostic(
+                "Expected a regular __init__.py file below the plugin entry.",
+                path=relative_entry_point,
+                help_text=("Add a regular __init__.py file to the plugin directory."),
+            )
+        return None
 
 
 class ManifestExistsRule(Rule):
@@ -156,7 +233,7 @@ class ManifestExistsRule(Rule):
     code = "STR003"
     family = RuleFamily.STRUCTURE
     phase = RulePhase.STRUCTURE
-    order = 30
+    order = 40
     requires = frozenset({Capability.PLUGIN_DIR})
 
     def check(self, context: ValidationContext) -> list[Diagnostic]:
@@ -355,9 +432,12 @@ class PythonSourceRule(Rule):
             relative_path = context.repository_path(path)
             try:
                 resolved_path = path.resolve()
-                if not resolved_path.is_relative_to(plugin_root) or not path.is_file():
+                if (
+                    not resolved_path.is_relative_to(plugin_root)
+                    or not resolved_path.is_file()
+                ):
                     continue
-                source = path.read_text(encoding="utf-8")
+                source = resolved_path.read_text(encoding="utf-8")
                 tree = ast.parse(source, filename=relative_path)
             except SyntaxError as error:
                 diagnostics.append(self._syntax_diagnostic(relative_path, error))
@@ -508,6 +588,7 @@ def locate_attribute(source: str, node: ast.Attribute) -> dict[str, int]:
 DEFAULT_RULES: tuple[Rule, ...] = (
     CustomPluginsRule(),
     SinglePluginRule(),
+    PluginEntryPointRule(),
     ManifestExistsRule(),
     ManifestParsingRule(),
     ManifestSchemaRule(),

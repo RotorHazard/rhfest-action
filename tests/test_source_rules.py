@@ -10,6 +10,7 @@ import pytest
 
 from rhfest.engine import ValidationEngine
 from rhfest.models import Diagnostic, RuleFamily, Severity, ValidationContext
+from rhfest.rules import PythonSourceRule
 
 PRIVATE_MESSAGE = (
     "Private RHAPI member '_racecontext' accessed. Plugins must use the public "
@@ -308,14 +309,18 @@ def test_plugin_symlink_outside_repository_is_rejected(
         json.dumps(valid_manifest),
         encoding="utf-8",
     )
+    (external_plugin / "__init__.py").touch()
     (external_plugin / "private.py").write_text(
         "def initialize(rhapi):\n    return rhapi._racecontext\n",
         encoding="utf-8",
     )
     (plugin_parent / "example").symlink_to(external_plugin, target_is_directory=True)
-    context = ValidationContext(repository)
+    context = ValidationContext(
+        repository,
+        plugin_dir=plugin_parent / "example",
+    )
 
-    result = ValidationEngine().run(context)
+    result = ValidationEngine((PythonSourceRule(),)).run(context)
     diagnostics = tuple(
         item for item in result.diagnostics if item.family is RuleFamily.ROTORHAZARD
     )
@@ -327,6 +332,45 @@ def test_plugin_symlink_outside_repository_is_rejected(
         "Plugin source directory resolves outside the repository."
     )
     assert context.python_sources == ()
+
+
+def test_rh000_reads_the_resolved_source_path(
+    monkeypatch: pytest.MonkeyPatch,
+    valid_manifest: dict[str, Any],
+    tmp_path: Path,
+) -> None:
+    """A source symlink cannot redirect the read after its boundary check."""
+    repository = tmp_path / "repository"
+    plugin_dir = repository / "custom_plugins" / "example"
+    plugin_dir.mkdir(parents=True)
+    (plugin_dir / "__init__.py").touch()
+    (plugin_dir / "manifest.json").write_text(
+        json.dumps(valid_manifest),
+        encoding="utf-8",
+    )
+    source_target = plugin_dir / "source.txt"
+    source_target.write_text("VALUE = 1\n", encoding="utf-8")
+    source_path = plugin_dir / "linked.py"
+    source_path.symlink_to(source_target)
+    external_source = tmp_path / "external.py"
+    external_source.write_text(
+        "def initialize(rhapi):\n    return rhapi._racecontext\n",
+        encoding="utf-8",
+    )
+    original_read_text = Path.read_text
+
+    def redirecting_read_text(path: Path, *args: object, **kwargs: object) -> str:
+        if path == source_path:
+            path.unlink()
+            path.symlink_to(external_source)
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", redirecting_read_text)
+
+    result = ValidationEngine().run(ValidationContext(repository))
+
+    assert result.diagnostics == ()
+    assert source_path.resolve() == source_target
 
 
 def test_rh000_reports_syntax_errors_without_blocking_other_files(
@@ -371,6 +415,7 @@ def test_python_files_are_parsed_once_for_all_source_rules(
     ValidationEngine().run(context)
 
     assert parse_calls == [
+        "custom_plugins/example/__init__.py",
         "custom_plugins/example/a.py",
         "custom_plugins/example/nested/b.py",
     ]

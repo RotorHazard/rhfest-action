@@ -108,6 +108,7 @@ def test_man000_reports_invalid_json_with_source_location(tmp_path: Path) -> Non
     """Malformed JSON becomes one precise diagnostic instead of a traceback."""
     plugin_dir = tmp_path / "custom_plugins" / "example"
     plugin_dir.mkdir(parents=True)
+    (plugin_dir / "__init__.py").touch()
     manifest_path = plugin_dir / "manifest.json"
     manifest_path.write_text(
         '{\n  "domain": "example",\n  "name":,\n}\n',
@@ -137,6 +138,7 @@ def test_man000_reports_invalid_utf8(tmp_path: Path) -> None:
     """Unicode decoding failures use the shared diagnostic path."""
     plugin_dir = tmp_path / "custom_plugins" / "example"
     plugin_dir.mkdir(parents=True)
+    (plugin_dir / "__init__.py").touch()
     (plugin_dir / "manifest.json").write_bytes(b"\xff")
 
     result = validate(tmp_path)
@@ -154,6 +156,7 @@ def test_man000_rejects_manifest_symlink_outside_repository(
     repository = tmp_path / "repository"
     plugin_dir = repository / "custom_plugins" / "example"
     plugin_dir.mkdir(parents=True)
+    (plugin_dir / "__init__.py").touch()
     external_manifest = tmp_path / "external-manifest.json"
     external_manifest.write_text(json.dumps(valid_manifest), encoding="utf-8")
     (plugin_dir / "manifest.json").symlink_to(external_manifest)
@@ -176,6 +179,7 @@ def test_man000_reads_the_resolved_manifest_path(
     repository = tmp_path / "repository"
     plugin_dir = repository / "custom_plugins" / "example"
     plugin_dir.mkdir(parents=True)
+    (plugin_dir / "__init__.py").touch()
     manifest_target = plugin_dir / "manifest-target.json"
     manifest_target.write_text(json.dumps(valid_manifest), encoding="utf-8")
     manifest_path = plugin_dir / "manifest.json"
@@ -229,6 +233,7 @@ def test_parsed_json_null_reaches_schema_validation(tmp_path: Path) -> None:
     """A parsed null is distinct from the absence of parsed manifest context."""
     plugin_dir = tmp_path / "custom_plugins" / "example"
     plugin_dir.mkdir(parents=True)
+    (plugin_dir / "__init__.py").touch()
     (plugin_dir / "manifest.json").write_text("null\n", encoding="utf-8")
     context = ValidationContext(tmp_path)
 
@@ -288,6 +293,7 @@ def test_man000_uses_github_annotation_reporting(tmp_path: Path) -> None:
     """Manifest parser diagnostics carry full GitHub annotation metadata."""
     plugin_dir = tmp_path / "custom_plugins" / "example"
     plugin_dir.mkdir(parents=True)
+    (plugin_dir / "__init__.py").touch()
     (plugin_dir / "manifest.json").write_text('{"name": }\n', encoding="utf-8")
     stream = StringIO()
 

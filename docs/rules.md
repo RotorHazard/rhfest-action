@@ -23,6 +23,14 @@ Require exactly one entry below `custom_plugins`.
 
 Require `manifest.json` below the discovered plugin entry.
 
+### STR004 — Plugin entry point
+
+Require the single plugin entry to be a directory containing a regular
+`__init__.py` file so RotorHazard can load it as a plugin. Plugin directories
+and entry points that resolve outside the repository are rejected. Replace a
+non-directory entry with a plugin directory, or add a regular `__init__.py`
+file inside the existing plugin directory.
+
 ## Manifest rules
 
 ### MAN000 — Manifest parsing

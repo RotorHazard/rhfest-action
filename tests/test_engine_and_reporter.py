@@ -159,6 +159,12 @@ def test_context_capabilities_are_typed(tmp_path: Path) -> None:
     """ValidationContext exposes discovered values through typed capabilities."""
     context = ValidationContext(tmp_path)
 
+    assert not context.has(Capability.PLUGIN_ENTRY)
+    context.plugin_entry = tmp_path / "custom_plugins" / "example"
+    assert context.has(Capability.PLUGIN_ENTRY)
+    assert not context.has(Capability.PLUGIN_DIR)
+    context.plugin_dir = context.plugin_entry
+    assert context.has(Capability.PLUGIN_DIR)
     assert not context.has(Capability.MANIFEST_PATH)
     context.manifest_path = tmp_path / "manifest.json"
     assert context.has(Capability.MANIFEST_PATH)
