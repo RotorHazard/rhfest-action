@@ -16,6 +16,24 @@ permissions:
   contents: read
 
 jobs:
+  pytest:
+    name: 🧪 Pytest (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.13", "3.14"]
+    steps:
+      - name: ⤵️ Checkout
+        uses: actions/checkout@v7.0.1
+      - name: 🏗 Set up UV
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - name: 🧪 Run tests
+        run: uv run --group dev pytest
+
   lint-hadolint:
     name: 🐳 Hadolint
     runs-on: ubuntu-latest

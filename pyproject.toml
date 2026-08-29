@@ -13,11 +13,15 @@ dependencies = [
 dev = [
   "pre-commit==4.6.2",
   "pre-commit-hooks==6.0.0",
+  "pytest==8.4.2",
   "ruff==0.15.22",
 ]
 
 [tool.uv]
 default-groups = []
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
 [tool.ruff]
 target-version = "py313"
@@ -42,3 +46,4 @@ lint.ignore = [
   # Custom ignores
   "G004",    # Allow f-string in logging
 ]
+lint.per-file-ignores = { "tests/**" = ["ARG002", "ARG005", "S101"] }
