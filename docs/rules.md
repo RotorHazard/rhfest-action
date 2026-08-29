@@ -60,7 +60,7 @@ Reject access to `_racecontext` through an RHAPI-derived expression. RotorHazard
 stores its internal race context on the root API object and its public namespace
 implementations, but this is an implementation detail rather than part of the
 plugin API contract. See the pinned RotorHazard
-[`RHAPI.py` implementation](https://github.com/RotorHazard/RotorHazard/blob/9ef67b1a4cd6a8dd87fa8cd6e6860917ed0eefae/src/server/RHAPI.py#L29).
+[`RHAPI.py` implementation](https://github.com/RotorHazard/RotorHazard/blob/main/src/server/RHAPI.py#L29).
 
 For example, RH001 detects all of these accesses:
 
