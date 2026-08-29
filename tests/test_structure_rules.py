@@ -72,4 +72,6 @@ def test_successful_structure_discovers_context(
         "STR003",
         "MAN001",
         "MAN002",
+        "RH000",
+        "RH001",
     )

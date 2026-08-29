@@ -10,6 +10,9 @@ A reusable GitHub Action that validates the repository structure and `manifest.j
   - 📁 Presence of single plugin domain folder
   - 📄 Presence of `manifest.json` file
   - 🔁 Plugin domain folder matches the `domain` in `manifest.json`
+- ✅ RotorHazard-specific Python linting
+  - 🔒 Detects private `_racecontext` access through RHAPI and simple aliases
+  - 🌳 Uses reusable AST analysis instead of text matching
 - 🚨 GitHub Action annotations for validation errors
 - ⚠️ Warning diagnostics that do not fail validation
 - 🐳 Docker image for local testing (manual or pre-commit)
@@ -95,8 +98,9 @@ diagnostics; warnings alone exit with status `0`.
 uv run --group dev pytest
 ```
 
-The test suite covers the rule engine, repository discovery, manifest schema,
-reporting, and exit status. CI runs it on all supported Python versions.
+The test suite covers the rule engine, repository and Python-source discovery,
+manifest schema, RHAPI provenance, reporting, and exit status. CI runs it on all
+supported Python versions.
 
 ## Rule engine
 
@@ -110,7 +114,7 @@ The rule families are:
 
 - `STRxxx` — repository and plugin structure
 - `MANxxx` — `manifest.json` loading and validation
-- `RHxxx` — reserved for future RotorHazard-specific Python rules
+- `RHxxx` — RotorHazard-specific Python source analysis
 
 See the [rule catalog](docs/rules.md) for the stable code mapping, detailed rule
 behavior, diagnostic formats, and instructions for adding a rule.
