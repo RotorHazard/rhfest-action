@@ -15,6 +15,7 @@ from rhfest.models import (
 )
 from rhfest.report import Reporter
 from rhfest.rules import DEFAULT_RULES, Rule
+from rhfest.selection import RuleSelection
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +64,7 @@ class ValidationEngine:
         self,
         context: ValidationContext,
         reporter: Reporter | None = None,
+        selection: RuleSelection | None = None,
     ) -> ValidationResult:
         """Execute rules, collect findings, optionally report, and return status."""
         diagnostics: list[Diagnostic] = []
@@ -82,6 +84,8 @@ class ValidationEngine:
                 failed_phases.add(rule.phase)
 
         result = ValidationResult(tuple(diagnostics), tuple(executed_rules))
+        if selection is not None:
+            result = selection.apply(result)
         if reporter is not None:
             reporter.report(result, context)
         return result

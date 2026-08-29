@@ -27,8 +27,5 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Ensure Python can find installed binaries & packages
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Reset the entrypoint, don't invoke `uv`
-ENTRYPOINT []
-
-# Run RHFest validation
-CMD ["python", "-m", "rhfest.core"]
+# Run RHFest validation and pass local CLI flags through Docker arguments
+ENTRYPOINT ["python", "-m", "rhfest.core"]

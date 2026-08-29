@@ -39,6 +39,11 @@ class Reporter:
             stream.isatty() and "NO_COLOR" not in os.environ if color is None else color
         )
 
+    def report_configuration(self, summary: str) -> None:
+        """Identify explicit local selection without adding annotation noise."""
+        if summary and not self.github_actions:
+            self._write(f"RHFest configuration: {summary}")
+
     def report(
         self,
         result: ValidationResult,

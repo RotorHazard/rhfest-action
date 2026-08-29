@@ -201,7 +201,10 @@ The `source` phase is independent of manifest policy. Python source rules can
 therefore run when repository discovery succeeds, even if
 `manifest.json` contains a schema or domain error.
 
-Future diagnostic selection or ignore behavior must filter collected
-diagnostics rather than blindly skipping prerequisite analysis. Context
-discovery must remain available to dependent rules even when a prerequisite
-rule's own diagnostic is not selected for display.
+Rule selection filters collected diagnostics after analysis instead of skipping
+registered rules. Exact codes and complete family prefixes are resolved against
+the validated registry before analysis starts. `ignore` is applied after
+`select` and takes precedence. Context discovery and phase failure behavior
+therefore remain available to dependent rules even when a prerequisite rule's
+own diagnostic is not selected for display. The filtered diagnostics are the
+ones rendered, summarized, and used to calculate exit status.
