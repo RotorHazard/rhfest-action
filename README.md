@@ -1,6 +1,6 @@
 # RHFest Action
 
-A reusable GitHub Action that validates `manifest.json` files for RotorHazard plugins. It checks for missing fields, invalid formats, and unsupported values, and logs validation errors directly in GitHub Actions logs using **GitHub-friendly annotations**.
+A reusable GitHub Action that validates the repository structure and `manifest.json` files for RotorHazard plugins. Validation runs through a shared rule engine and reports stable rule codes in local output and **GitHub-friendly annotations**.
 
 ## 🛠️ Features
 
@@ -10,8 +10,11 @@ A reusable GitHub Action that validates `manifest.json` files for RotorHazard pl
   - 📁 Presence of single plugin domain folder
   - 📄 Presence of `manifest.json` file
   - 🔁 Plugin domain folder matches the `domain` in `manifest.json`
+- ✅ RotorHazard-specific Python linting
+  - 🔒 Detects private `_racecontext` access through RHAPI and simple aliases
+  - 🌳 Uses reusable AST analysis instead of text matching
 - 🚨 GitHub Action annotations for validation errors
-- ⚠️ Warnings for missing required fields
+- ⚠️ Warning diagnostics that do not fail validation
 - 🐳 Docker image for local testing (manual or pre-commit)
 - 📋 Validates for example:
   - **domain** format (e.g., lowercase letters, numbers, underscores)
@@ -36,10 +39,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run RHFest validation
-        uses: docker://ghcr.io/rotorhazard/rhfest-action:v3
+        uses: RotorHazard/rhfest-action@v3
+```
+
+To adopt rule families incrementally or suppress a deliberate exception, pass
+the corresponding Action inputs:
+
+```yaml
+      - name: Run selected RHFest validation
+        uses: RotorHazard/rhfest-action@v3
+        with:
+          select: "STR,MAN,RH002"
+          ignore: "MAN002"
+```
+
+## Pre-commit
+
+RHFest is also available as an official Docker-based pre-commit hook. Pin the
+hook to an exact release for reproducible checks:
+
+```yaml
+repos:
+  - repo: https://github.com/RotorHazard/rhfest-action
+    rev: v3.2.0
+    hooks:
+      - id: rhfest
 ```
 
 ## Test plugin locally
@@ -50,6 +77,14 @@ RHFest is available as a [Docker image](https://github.com/RotorHazard/rhfest-ac
 
 ```bash
 docker run --rm -v "$(pwd)":/repo ghcr.io/rotorhazard/rhfest-action:latest
+```
+
+Rule selection flags can be passed directly to the container:
+
+```bash
+docker run --rm -v "$(pwd)":/repo \
+  ghcr.io/rotorhazard/rhfest-action:latest \
+  --select STR,MAN,RH002 --ignore MAN002
 ```
 
 ## Development
@@ -81,8 +116,57 @@ uv run pre-commit install
 4. Run the application
 
 ```bash
-uv run python rhfest/core.py
+uv run python -m rhfest.core
 ```
+
+Use `--select` and `--ignore` with comma-separated exact codes or complete rule
+families. Options may be repeated:
+
+```bash
+uv run python -m rhfest.core --select STR,MAN --select RH002 --ignore MAN002
+```
+
+Selectors are case-insensitive. `ignore` is applied after `select` and therefore
+always takes precedence. Unknown codes, unknown families, partial codes, and
+empty selectors are configuration errors with exit status `2`. When no selector
+is configured, RHFest continues to run and report every registered rule.
+
+`RHFEST_SELECT` and `RHFEST_IGNORE` provide the equivalent environment-based
+configuration. The GitHub Action inputs use the same parser through
+`INPUT_SELECT` and `INPUT_IGNORE`. Explicit CLI flags override their respective
+environment value.
+
+RHFest validates the current directory outside GitHub Actions and Docker. Set
+`GITHUB_WORKSPACE` to validate another path using the same discovery behavior as
+the action. A run exits with status `1` when it contains one or more error
+diagnostics; warnings alone exit with status `0`.
+
+### Run tests
+
+```bash
+uv run --group dev pytest
+```
+
+The test suite covers the rule engine, repository and Python-source discovery,
+manifest schema, RHAPI provenance, reporting, and exit status. CI runs it on all
+supported Python versions.
+
+## Rule engine
+
+Every finding is represented as data with a stable code, severity, message,
+family, and optional repository-relative path, one-based line, and one-based
+column. Rules return these diagnostics without writing logs themselves. The
+engine sorts registered rules by phase, order, and code, executes applicable
+rules, and passes the collected result to one reporter.
+
+The rule families are:
+
+- `STRxxx` — repository and plugin structure
+- `MANxxx` — `manifest.json` loading and validation
+- `RHxxx` — RotorHazard-specific Python source analysis
+
+See the [rule catalog](docs/rules.md) for the stable code mapping, detailed rule
+behavior, diagnostic formats, and instructions for adding a rule.
 
 ### Run pre-commit checks
 

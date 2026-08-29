@@ -3,6 +3,15 @@ description: "Validates manifests of community plugins for RotorHazard"
 branding:
   icon: terminal
   color: gray-dark
+inputs:
+  select:
+    description: "Exact rule codes or families to report (comma-separated)"
+    required: false
+    default: ""
+  ignore:
+    description: "Exact rule codes or families to ignore after selection"
+    required: false
+    default: ""
 runs:
   using: "docker"
-  image: "ghcr.io/rotorhazard/rhfest-action:v3.1.0"
+  image: "Dockerfile"

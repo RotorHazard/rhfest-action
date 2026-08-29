@@ -16,14 +16,46 @@ permissions:
   contents: read
 
 jobs:
+  hook-manifest:
+    name: 🪝 Pre-commit hook manifest
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Checkout
+        uses: actions/checkout@v7.0.1
+      - name: 🏗 Set up UV
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - name: 🧪 Validate hook manifest
+        run: uv run --group dev pre-commit validate-manifest .pre-commit-hooks.yaml
+
+  pytest:
+    name: 🧪 Pytest (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.13", "3.14"]
+    steps:
+      - name: ⤵️ Checkout
+        uses: actions/checkout@v7.0.1
+      - name: 🏗 Set up UV
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - name: 🧪 Run tests
+        run: uv run --group dev pytest
+
   lint-hadolint:
     name: 🐳 Hadolint
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
       - name: 🧪 Run Hadolint
-        uses: hadolint/hadolint-action@v3.3.0
+        uses: hadolint/hadolint-action@v3.5.0
 
   build-test:
     name: 🛠 Build test (py${{ matrix.python }})
@@ -35,9 +67,9 @@ jobs:
         python: ["3.13", "3.14"]
     steps:
       - name: ⤵️ Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
       - name: 🔧 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4.2.0
+        uses: docker/setup-buildx-action@v4.3.0
         with:
           install: true
           driver: docker-container
