@@ -39,25 +39,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run RHFest validation
-        uses: docker://ghcr.io/rotorhazard/rhfest-action:v3
+        uses: RotorHazard/rhfest-action@v3
 ```
 
 To adopt rule families incrementally or suppress a deliberate exception, pass
-selection through the step environment:
-
-```yaml
-      - name: Run selected RHFest validation
-        uses: docker://ghcr.io/rotorhazard/rhfest-action:v3
-        env:
-          RHFEST_SELECT: "STR,MAN,RH002"
-          RHFEST_IGNORE: "MAN002"
-```
-
-When the repository action is used directly, the same values are available as
-declared Action inputs:
+the corresponding Action inputs:
 
 ```yaml
       - name: Run selected RHFest validation
@@ -65,6 +54,19 @@ declared Action inputs:
         with:
           select: "STR,MAN,RH002"
           ignore: "MAN002"
+```
+
+## Pre-commit
+
+RHFest is also available as an official Docker-based pre-commit hook. Pin the
+hook to an exact release for reproducible checks:
+
+```yaml
+repos:
+  - repo: https://github.com/RotorHazard/rhfest-action
+    rev: v3.2.0
+    hooks:
+      - id: rhfest
 ```
 
 ## Test plugin locally

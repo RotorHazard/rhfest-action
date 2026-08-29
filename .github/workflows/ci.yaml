@@ -16,6 +16,20 @@ permissions:
   contents: read
 
 jobs:
+  hook-manifest:
+    name: 🪝 Pre-commit hook manifest
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Checkout
+        uses: actions/checkout@v7.0.1
+      - name: 🏗 Set up UV
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - name: 🧪 Validate hook manifest
+        run: uv run --group dev pre-commit validate-manifest .pre-commit-hooks.yaml
+
   pytest:
     name: 🧪 Pytest (py${{ matrix.python }})
     runs-on: ubuntu-latest

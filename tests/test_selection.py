@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+from rhfest.const import RHFEST_VERSION
 from rhfest.core import main, run_rhfest
 from rhfest.engine import ValidationEngine
 from rhfest.models import (
@@ -122,7 +123,8 @@ def test_filtered_diagnostics_control_exit_status_and_local_output(
 
     assert status == 0
     assert stream.getvalue() == (
-        "RHFest version: dev\nRHFest configuration: ignore=MAN002\nAll checks passed!\n"
+        f"RHFest version: {RHFEST_VERSION}\n"
+        "RHFest configuration: ignore=MAN002\nAll checks passed!\n"
     )
 
 
