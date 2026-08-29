@@ -42,6 +42,38 @@ def test_manifest_schema_failures(
     assert any(expected_fragment in item.message for item in result.diagnostics)
 
 
+@pytest.mark.parametrize(
+    "domain",
+    ["my-plugin", "_my_plugin", "my_plugin_", "my__plugin", "MyPlugin"],
+)
+def test_invalid_plugin_domain(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+    domain: str,
+) -> None:
+    """MAN001 rejects domains that are not valid RotorHazard identifiers."""
+    valid_manifest["domain"] = domain
+
+    result = validate(repository_factory(valid_manifest, domain))
+
+    assert [item.code for item in result.diagnostics] == ["MAN001"]
+    assert "Validation error in [domain]" in result.diagnostics[0].message
+
+
+@pytest.mark.parametrize("domain", ["myplugin", "my_plugin", "plugin2"])
+def test_valid_plugin_domain(
+    repository_factory: Callable[[dict[str, Any], str], Path],
+    valid_manifest: dict[str, Any],
+    domain: str,
+) -> None:
+    """MAN001 accepts lowercase domains with numbers and internal underscores."""
+    valid_manifest["domain"] = domain
+
+    result = validate(repository_factory(valid_manifest, domain))
+
+    assert result.diagnostics == ()
+
+
 def test_schema_rule_returns_multiple_diagnostics(
     repository_factory: Callable[[dict[str, Any], str], Path],
 ) -> None:

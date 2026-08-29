@@ -4,6 +4,10 @@ This changelog highlights user-facing changes in RHFest. The complete list of me
 
 ## [Unreleased]
 
+### Fixed
+
+- Plugin domains containing hyphens, leading or trailing underscores, or consecutive underscores are now rejected.
+
 ## [3.2.1] - 2026-08-29
 
 ### Fixed
