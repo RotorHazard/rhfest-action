@@ -11,6 +11,7 @@ from rhfest.engine import RuleRegistrationError, ValidationEngine
 from rhfest.models import (
     Capability,
     Diagnostic,
+    ManifestDocument,
     RuleFamily,
     RulePhase,
     Severity,
@@ -161,6 +162,9 @@ def test_context_capabilities_are_typed(tmp_path: Path) -> None:
     assert not context.has(Capability.MANIFEST_PATH)
     context.manifest_path = tmp_path / "manifest.json"
     assert context.has(Capability.MANIFEST_PATH)
+    context.manifest_document = ManifestDocument("null", None)
+    assert context.has(Capability.MANIFEST_DOCUMENT)
+    assert context.has(Capability.MANIFEST_DATA)
 
 
 def test_diagnostic_rejects_mismatched_family() -> None:

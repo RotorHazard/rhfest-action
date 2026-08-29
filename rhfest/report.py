@@ -46,7 +46,13 @@ class Reporter:
     ) -> None:
         """Render all findings, optional structure tree, and final status."""
         for diagnostic in result.diagnostics:
-            self._write(self.format_diagnostic(diagnostic, context.base_path))
+            self._write(
+                self.format_diagnostic(
+                    diagnostic,
+                    context.base_path,
+                    source=context.source_for(diagnostic.path),
+                )
+            )
 
         has_structure_error = any(
             item.family is RuleFamily.STRUCTURE and item.severity is Severity.ERROR
@@ -62,16 +68,19 @@ class Reporter:
         self,
         diagnostic: Diagnostic,
         base_path: Path | None = None,
+        *,
+        source: str | None = None,
     ) -> str:
         """Format a diagnostic for local output or a GitHub annotation."""
         if self.github_actions:
             return self._format_github(diagnostic)
-        return self._format_full(diagnostic, base_path)
+        return self._format_full(diagnostic, base_path, source)
 
     def _format_full(
         self,
         diagnostic: Diagnostic,
         base_path: Path | None,
+        source: str | None,
     ) -> str:
         """Render a Ruff/ty-style terminal diagnostic."""
         severity_color = "31" if diagnostic.severity is Severity.ERROR else "33"
@@ -87,7 +96,7 @@ class Reporter:
                     location += f":{diagnostic.column}"
             lines.append(f" {self._style('-->', '34', bold=True)} {location}")
 
-        source_line = self._read_source_line(diagnostic, base_path)
+        source_line = self._read_source_line(diagnostic, base_path, source)
         if source_line is not None and diagnostic.line is not None:
             line_number = str(diagnostic.line)
             gutter = " " * len(line_number)
@@ -148,21 +157,36 @@ class Reporter:
     def _read_source_line(
         diagnostic: Diagnostic,
         base_path: Path | None,
+        source: str | None = None,
     ) -> str | None:
         """Read a requested source line, returning no snippet when unavailable."""
-        if diagnostic.path is None or diagnostic.line is None or base_path is None:
+        if diagnostic.path is None or diagnostic.line is None:
+            return None
+        source_lines = (
+            source.splitlines()
+            if source is not None
+            else Reporter._read_source_lines(diagnostic.path, base_path)
+        )
+        if source_lines is None or diagnostic.line > len(source_lines):
+            return None
+        return source_lines[diagnostic.line - 1]
+
+    @staticmethod
+    def _read_source_lines(
+        diagnostic_path: str,
+        base_path: Path | None,
+    ) -> list[str] | None:
+        """Read repository-contained source when it is not already cached."""
+        if base_path is None:
             return None
         try:
             repository_path = base_path.resolve()
-            source_path = (repository_path / diagnostic.path).resolve()
+            source_path = (repository_path / diagnostic_path).resolve()
             if not source_path.is_relative_to(repository_path):
                 return None
-            source_lines = source_path.read_text(encoding="utf-8").splitlines()
+            return source_path.read_text(encoding="utf-8").splitlines()
         except (OSError, UnicodeError):
             return None
-        if diagnostic.line > len(source_lines):
-            return None
-        return source_lines[diagnostic.line - 1]
 
     def _write_summary(self, result: ValidationResult) -> None:
         """Render Ruff-like success or diagnostic totals."""
