@@ -49,7 +49,7 @@
     },
     {
       "matchDepNames": ["python/cpython"],
-      "extractVersion": "^v(?<version>\\d+\\.\\d+)"
+      "extractVersion": "^v(?<version>\\d+\\.\\d+)\\.\\d+$"
     },
     {
       "matchDepNames": ["python/cpython"],
